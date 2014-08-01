@@ -61,5 +61,6 @@ MIT license.
 
 History
 ----
+0.8: Fix the most recent change with APIs, with player biliInterface-201407302359. Use own key instead of AcDown's.
 
 For history before V0.74, visit http://www.cnbeining.com/ , or check the code at https://gist.github.com/cnbeining/9605757/revisions  .

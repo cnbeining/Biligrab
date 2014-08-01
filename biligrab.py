@@ -1,5 +1,5 @@
 '''
-Biligrab 0.74
+Biligrab 0.8
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
@@ -14,6 +14,7 @@ import urllib
 import urllib2
 import sys
 import commands
+import hashlib
 
 from xml.dom.minidom import parse, parseString
 import xml.dom.minidom
@@ -28,8 +29,10 @@ global title
 global videourl
 global part_now
 
-
-
+global appkey
+global secretkey
+appkey='85eb6835b0a1034e';
+secretkey = '2ad42749773c441109bdc0191257a664'
 
 
 
@@ -58,13 +61,19 @@ def find_cid_api(vid, p):
     title = ''
     partname = ''
     if str(p) is '0' or str(p) is '1':
-        biliurl = 'http://api.bilibili.tv/view?type=xml&appkey=876fe0ebd0e67a0f&id=' + str(vid)
+        str2Hash = 'appkey=85eb6835b0a1034e&id=' + str(vid) + '&type=xml2ad42749773c441109bdc0191257a664'
+        sign_this = hashlib.md5(str2Hash.encode('utf-8')).hexdigest()
+        biliurl = 'http://api.bilibili.tv/view?appkey=85eb6835b0a1034e&id=' + str(vid) + '&type=xml&sign=' + sign_this
+        #print(biliurl)
     else:
-        biliurl = 'http://api.bilibili.tv/view?type=xml&appkey=876fe0ebd0e67a0f&id=' + str(vid) + '&page=' + str(p)
+        str2Hash = 'appkey=85eb6835b0a1034e&id=' + str(vid) + '&page=' + str(p) + '&type=xml2ad42749773c441109bdc0191257a664'
+        sign_this = hashlib.md5(str2Hash.encode('utf-8')).hexdigest()
+        biliurl = 'http://api.bilibili.tv/view?appkey=85eb6835b0a1034e&id=' + str(vid) + '&page=' + str(p) + '&type=xml&sign=' + sign_this
+        #print(biliurl)
     videourl = 'http://www.bilibili.tv/video/av'+ str(vid)+'/index_'+ str(p)+'.html'
     print('Fetching webpage...')
     try:
-        request = urllib2.Request(biliurl, headers={ 'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' , 'Cookie': cookies})
+        request = urllib2.Request(biliurl, headers={ 'User-Agent' : 'Biligrab /0.8 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' , 'Cookie': cookies})
         response = urllib2.urlopen(request)
         data = response.read()
         dom = parseString(data)
@@ -191,18 +200,25 @@ def main(vid, p, oversea):
     #try api
     if oversea == '1':
         try:
-            request = urllib2.Request('http://interface.bilibili.cn/v_cdn_play?cid='+cid, headers={ 'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
+            str2Hash = 'appkey=85eb6835b0a1034e&cid='+cid+'2ad42749773c441109bdc0191257a664'
+            sign_this = hashlib.md5(str2Hash.encode('utf-8')).hexdigest()
+            request = urllib2.Request('http://interface.bilibili.cn/v_cdn_play?appkey=85eb6835b0a1034e&cid='+cid+'&sign=' + sign_this, headers={ 'User-Agent' : 'Biligrab /0.8 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
         except:
             print('ERROR: Cannot connect to CDN API server!')
     elif oversea is '2':
         #Force get oriurl
         try:
-            request = urllib2.Request('http://interface.bilibili.com/player?id=cid:'+cid, headers={ 'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
+            str2Hash = 'appkey=85eb6835b0a1034e&cid='+cid+'2ad42749773c441109bdc0191257a664'
+            sign_this = hashlib.md5(str2Hash.encode('utf-8')).hexdigest()
+            request = urllib2.Request('http://interface.bilibili.cn/player?appkey=85eb6835b0a1034e&cid='+cid+'&sign=' + sign_this, headers={ 'User-Agent' : 'Biligrab /0.8 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })            
         except:
             print('ERROR: Cannot connect to original source API server!')
     else:
         try:
-            request = urllib2.Request('http://interface.bilibili.tv/playurl?cid='+cid, headers={ 'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
+            str2Hash = 'appkey=85eb6835b0a1034e&cid='+cid+'2ad42749773c441109bdc0191257a664'
+            sign_this = hashlib.md5(str2Hash.encode('utf-8')).hexdigest()
+            print('http://interface.bilibili.cn/v_cdn_play?appkey=85eb6835b0a1034e&cid='+cid+'&sign=' + sign_this)
+            request = urllib2.Request('http://interface.bilibili.cn/v_cdn_play?appkey=85eb6835b0a1034e&cid='+cid+'&sign=' + sign_this, headers={ 'User-Agent' : 'Biligrab /0.8 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
         except:
             print('ERROR: Cannot connect to normal API server!')
     response = urllib2.urlopen(request)
