@@ -1,5 +1,5 @@
 '''
-Biligrab 0.8
+Biligrab 0.81
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
@@ -63,14 +63,14 @@ def find_cid_api(vid, p):
     if str(p) is '0' or str(p) is '1':
         str2Hash = 'appkey=85eb6835b0a1034e&id=' + str(vid) + '&type=xml2ad42749773c441109bdc0191257a664'
         sign_this = hashlib.md5(str2Hash.encode('utf-8')).hexdigest()
-        biliurl = 'http://api.bilibili.tv/view?appkey=85eb6835b0a1034e&id=' + str(vid) + '&type=xml&sign=' + sign_this
-        #print(biliurl)
+        biliurl = 'https://api.bilibili.com/view?appkey=85eb6835b0a1034e&id=' + str(vid) + '&type=xml&sign=' + sign_this
+        print(biliurl)
     else:
         str2Hash = 'appkey=85eb6835b0a1034e&id=' + str(vid) + '&page=' + str(p) + '&type=xml2ad42749773c441109bdc0191257a664'
         sign_this = hashlib.md5(str2Hash.encode('utf-8')).hexdigest()
-        biliurl = 'http://api.bilibili.tv/view?appkey=85eb6835b0a1034e&id=' + str(vid) + '&page=' + str(p) + '&type=xml&sign=' + sign_this
+        biliurl = 'https://api.bilibili.com/view?appkey=85eb6835b0a1034e&id=' + str(vid) + '&page=' + str(p) + '&type=xml&sign=' + sign_this
         #print(biliurl)
-    videourl = 'http://www.bilibili.tv/video/av'+ str(vid)+'/index_'+ str(p)+'.html'
+    videourl = 'http://www.bilibili.com/video/av'+ str(vid)+'/index_'+ str(p)+'.html'
     print('Fetching webpage...')
     try:
         request = urllib2.Request(biliurl, headers={ 'User-Agent' : 'Biligrab /0.8 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' , 'Cookie': cookies})
@@ -131,7 +131,7 @@ def find_link_flvcd(videourl):
     for items in data_list:
         if 'name' in items and 'inf' in items and 'input' in items:
             c = items
-            rawurlflvcd = c[39:-5]
+            rawurlflvcd = c[59:-5]
             rawurlflvcd = rawurlflvcd.split('|')
             return rawurlflvcd
 
@@ -144,8 +144,8 @@ def main(vid, p, oversea):
     global title
     global videourl
     global is_first_run
-    videourl = 'http://www.bilibili.tv/video/av'+ str(vid)+'/index_'+ str(p)+'.html'
-    
+    videourl = 'http://www.bilibili.com/video/av'+ str(vid)+'/index_'+ str(p)+'.html'
+
     output = commands.getstatusoutput('ffmpeg --help')
     if str(output[0]) == '32512':
         print('FFmpeg does not exist! Trying to get you a binary, need root...')
@@ -154,7 +154,7 @@ def main(vid, p, oversea):
     if str(output[0]) == '32512':
         print('aria2c does not exist! Trying to get you a binary, need root... Thanks for @MartianZ \'s work.')
         os.system('sudo curl -o /usr/bin/aria2c https://raw.githubusercontent.com/MartianZ/fakeThunder/master/fakeThunder/aria2c')
-    
+
     find_cid_api(vid, p)
     global cid
     if cid is 0:
@@ -191,39 +191,32 @@ def main(vid, p, oversea):
             os.makedirs(folder_to_make)
         is_first_run = 1
         os.chdir(folder_to_make)
-    
+
     print('Fetching XML...')
-    os.system('curl -o "'+filename+'.xml" --compressed  http://comment.bilibili.cn/'+cid+'.xml')
+    os.system('curl -o "'+filename+'.xml" --compressed  http://comment.bilibili.com/'+cid+'.xml')
     os.system('gzip -d '+cid+'.xml.gz')
     print('The XML file, ' + filename + '.xml should be ready...enjoy!')
     print('Finding video location...')
     #try api
+    sign_this = hashlib.md5('appkey=' + appkey + '&cid=' + cid + secretkey.encode('utf-8')).hexdigest()
     if oversea == '1':
         try:
-            str2Hash = 'appkey=85eb6835b0a1034e&cid='+cid+'2ad42749773c441109bdc0191257a664'
-            sign_this = hashlib.md5(str2Hash.encode('utf-8')).hexdigest()
-            request = urllib2.Request('http://interface.bilibili.cn/v_cdn_play?appkey=85eb6835b0a1034e&cid='+cid+'&sign=' + sign_this, headers={ 'User-Agent' : 'Biligrab /0.8 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
+            request = urllib2.Request('http://interface.bilibili.com/v_cdn_play?appkey=' + appkey + '&cid=' + cid + '&sign=' + sign_this, headers={ 'User-Agent' : 'Biligrab /0.8 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
         except:
             print('ERROR: Cannot connect to CDN API server!')
     elif oversea is '2':
         #Force get oriurl
         try:
-            str2Hash = 'appkey=85eb6835b0a1034e&cid='+cid+'2ad42749773c441109bdc0191257a664'
-            sign_this = hashlib.md5(str2Hash.encode('utf-8')).hexdigest()
-            request = urllib2.Request('http://interface.bilibili.cn/player?appkey=85eb6835b0a1034e&cid='+cid+'&sign=' + sign_this, headers={ 'User-Agent' : 'Biligrab /0.8 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })            
+            request = urllib2.Request('http://interface.bilibili.com/player?appkey=' + appkey + '&cid=' + cid + '&sign=' + sign_this, headers={ 'User-Agent' : 'Biligrab /0.8 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
         except:
             print('ERROR: Cannot connect to original source API server!')
     else:
         try:
-            str2Hash = 'appkey=85eb6835b0a1034e&cid='+cid+'2ad42749773c441109bdc0191257a664'
-            sign_this = hashlib.md5(str2Hash.encode('utf-8')).hexdigest()
-            print('http://interface.bilibili.cn/v_cdn_play?appkey=85eb6835b0a1034e&cid='+cid+'&sign=' + sign_this)
-            request = urllib2.Request('http://interface.bilibili.cn/v_cdn_play?appkey=85eb6835b0a1034e&cid='+cid+'&sign=' + sign_this, headers={ 'User-Agent' : 'Biligrab /0.8 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
+            request = urllib2.Request('http://interface.bilibili.com/playurl?appkey=' + appkey + '&cid=' + cid + '&sign=' + sign_this, headers={ 'User-Agent' : 'Biligrab /0.8 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
         except:
             print('ERROR: Cannot connect to normal API server!')
     response = urllib2.urlopen(request)
     data = response.read()
-    #print(data_list)
     rawurl = []
     originalurl = ''
     if oversea is '2':
@@ -271,11 +264,21 @@ def main(vid, p, oversea):
     f.close()
     print('Concating videos...')
     os.system('ffmpeg -f concat -i ff.txt -c copy "'+filename+'".mp4')
-    os.system('rm -r ff.txt')
-    for i in range(vid_num):
-        os.system('rm -r '+str(i)+'.flv')
-    print('Done, enjoy yourself!')
-    #
+    if os.path.isfile(str(filename+'.mp4')):
+        os.system('rm -r ff.txt')
+        for i in range(vid_num):
+            os.system('rm -r '+str(i)+'.flv')
+        print('Done, enjoy yourself!')
+    else:
+        print('ERROR: Cannot concatenative files, trying to make flv...')
+        os.system('ffmpeg -f concat -i ff.txt -c copy "'+filename+'".flv')
+        if os.path.isfile(str(filename+'.flv')):
+            print('FLV file made. Not possible to mux to MP4, highly likely due to audio format.')
+            os.system('rm -r ff.txt')
+            for i in range(vid_num):
+                os.system('rm -r '+str(i)+'.flv')
+        else:
+            print('ERROR: Cannot concatenative files, trying to make flv...')
 
 
 vid = str(raw_input('av'))
