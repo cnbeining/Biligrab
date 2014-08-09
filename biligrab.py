@@ -1,5 +1,10 @@
+#!/usr/bin/env python
+#coding:utf-8
+# Author: Beining --<ACICFG>
+# Purpose: Yet another danmaku and video file downloader of Bilibili. 
+# Created: 12/10/2013
 '''
-Biligrab 0.81
+Biligrab 0.86
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
@@ -15,6 +20,8 @@ import urllib2
 import sys
 import commands
 import hashlib
+import getopt
+
 
 from xml.dom.minidom import parse, parseString
 import xml.dom.minidom
@@ -28,6 +35,8 @@ global partname
 global title
 global videourl
 global part_now
+global is_first_run
+
 
 global appkey
 global secretkey
@@ -281,66 +290,155 @@ def main(vid, p, oversea):
             print('ERROR: Cannot concatenative files, trying to make flv...')
 
 
-vid = str(raw_input('av'))
-p_raw = str(raw_input('P'))
-oversea = str(input('Source?'))
 
-p_list = []
-p_raw = p_raw.split(',')
-
-for item in p_raw:
-    if '~' in item:
-        #print(item)
-        lower = 0
-        higher = 0
-        item = item.split('~')
-        try:
-            lower = int(item[0])
-        except:
-            print('Cannot read lower!')
-        try:
-            higher = int(item[1])
-        except:
-            print('Cannot read higher!')
-        if lower == 0 or higher == 0:
-            if lower == 0 and higher != 0:
-                lower = higher
-            elif lower != 0 and higher == 0:
+#----------------------------------------------------------------------
+def get_full_p(p_raw):
+    """str->list"""
+    p_list = []
+    p_raw = p_raw.split(',')
+    for item in p_raw:
+        if '~' in item:
+            #print(item)
+            lower = 0
+            higher = 0
+            item = item.split('~')
+            part_now = '0'
+            try:
+                lower = int(item[0])
+            except:
+                print('Cannot read lower!')
+            try:
+                higher = int(item[1])
+            except:
+                print('Cannot read higher!')
+            if lower == 0 or higher == 0:
+                if lower == 0 and higher != 0:
+                    lower = higher
+                elif lower != 0 and higher == 0:
+                    higher = lower
+                else:
+                    print('Cannot find any higher or lower, ignoring...')
+                    #break
+            mid = 0
+            if higher < lower:
+                mid = higher
                 higher = lower
-            else:
-                print('Cannot find any higher or lower, ignoring...')
-                #break
-        mid = 0
-        if higher < lower:
-            mid = higher
-            higher = lower
-            lower = mid
-        p_list.append(lower)
-        while lower < higher:
-            lower = lower + 1
+                lower = mid
             p_list.append(lower)
-        #break
-    else:
-        try:
-            p_list.append(int(item))
-        except:
-            print('Cannot read "'+str(item)+'", abondon it.')
+            while lower < higher:
+                lower = lower + 1
+                p_list.append(lower)
             #break
+        else:
+            try:
+                p_list.append(int(item))
+            except:
+                print('Cannot read "'+str(item)+'", abondon it.')
+                #break
+    p_list = list_del_repeat(p_list)
+    return p_list
 
 
-p_list = list_del_repeat(p_list)
+#----------------------------------------------------------------------
+def usage():
+    """"""
+    print('''Usage:
+    
+    python biligrab.py (-h) (-a) (-p) (-s)
+    
+    -h: Default: None
+        Print this usage file.
+    
+    -a: Default: None
+        The av number.
+        If not set, Biligrab will use the falloff interact mode.
+        
+    -p: Default: 1
+        The part number.
+        Support "~", "," and mix use.
+        Examples:
+            Input        Output
+              1           [1]
+             1,2         [1, 2]
+             1~3        [1, 2, 3]
+            1,2~3       [1, 2, 3]
+                 
+    -s: Default: 0
+    Source to download.
+    0: The original API source, can be Letv backup,
+       and can failed if the original video is not avalable(e.g., deleted)
+    1: The CDN API source, "oversea accelerate".
+       Can be MINICDN backup in Mainland China or oversea.
+       Good to bypass some bangumi's limit.
+    2: Force to use the original source.
+       Use Flvcd to parase the video, but would fail if
+       1) The original source DNE, e.g., some old videos
+       2) The original source is Letvcloud itself.
+       3) Other unknown reason(s) that stops Flvcd from parase the video.''')
 
-global is_first_run
-is_first_run = 0
+#----------------------------------------------------------------------
+if __name__=='__main__':
+    is_first_run = 0
+    argv_list = []
+    argv_list = sys.argv[1:]
+    p_raw = ''
+    vid = ''
+    oversea = ''
+    try:
+        opts, args = getopt.getopt(argv_list, "ha:p:s:", ['help', "av",'part', 'source'])
+    except getopt.GetoptError:
+        usage()
+        exit()
+    for o, a in opts:
+        if o in ('-h', '--help'):
+            usage()
+            exit()
+        if o in ('-a', '--av'):
+            vid = a
+            try:
+                argv_list.remove('-a')
+            except:
+                break
+        if o in ('-p', '--part'):
+            p_raw = a
+            try:
+                argv_list.remove('-p')
+            except:
+                break
+        if o in ('-s', '--source'):
+            oversea = a
+            try:
+                argv_list.remove('-s')
+            except:
+                break
+    if len(vid) == 0:
+        vid = str(raw_input('av'))
+        p_raw = str(raw_input('P'))
+        oversea = str(input('Source?'))
+    '''
+    if len(vid) == 0:
+        vid = str(raw_input('Please input: av'))
+        if len(vid) == 0:
+            print('Cannot download nothing!')
+            exit()
+    '''
+    if len(p_raw) == 0:
+        print('No part number set, download part 1.')
+        p_raw = '1'
+    if len(oversea) == 0:
+        oversea = 0
+        print('Oversea not set, use original API(methon 0).')
+    print('Your targe download is av' + vid + ', part ' + p_raw + ', from source ' + oversea)
+    p_list = get_full_p(p_raw)
+    for p in p_list:
+        reload(sys)
+        sys.setdefaultencoding('utf-8')
+        part_now = str(p)
+        main(vid, p, oversea)
+    exit()
 
-part_now = '0'
-print(p_list)
-for p in p_list:
-    reload(sys)
-    sys.setdefaultencoding('utf-8')
-    part_now = str(p)
-    main(vid, p, oversea)
-exit()
+
+
 '''
         data_list = data.split('\r')
         for lines in data_list:
