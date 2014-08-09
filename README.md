@@ -9,13 +9,22 @@ Integrated with most of the "black science".
 
 Auto concat and convert to MP4 file(s), direct integrate with Mukioplayer-Py-Mac(https://github.com/cnbeining/Mukioplayer-Py-Mac  , the Flash danmaku playing solution) and ABPlayer-HTML5-Mac(https://github.com/cnbeining/ABPlayerHTML5-Py--nix  , the HTML5 playing solution, preferred). 
 
+Interact and non-interact mode for different situations.
+
 An intergration with Danmaku2ass(https://github.com/m13253/danmaku2ass) is fulfilled by m13253 with biligrab-danmaku2ass(https://github.com/m13253/biligrab-danmaku2ass), which can convert danmaku to .ass file.
 
 Usage
 ------
 If you have a Bilibili account, set the cookie with https://github.com/dantmnf/biliupload/blob/master/getcookie.py  will help you to download some of the restricted videos.
 
+Interact mode:
+
 python biligrab.py
+
+Or non-interact mode:
+
+```python biligrab.py (-h) (-a) (-p) (-s)```
+
 
 >av
 
@@ -61,6 +70,8 @@ MIT license.
 
 History
 ----
+0.86: Add non-interact mode, change API domain, fix #2.
+
 0.81: Fix Flvcd module; When failed to concat, try to concat to flv; If failed, leave the original file; Delete some lines to make it easier to intregrate; Fix domain name
 
 0.8: Fix the most recent change with APIs, with player biliInterface-201407302359. Use own key instead of AcDown's.
