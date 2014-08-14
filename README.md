@@ -23,7 +23,7 @@ python biligrab.py
 
 Or non-interact mode:
 
-```python biligrab.py (-h) (-a) (-p) (-s)```
+```python biligrab.py (-h) (-a) (-p) (-s) (-c)```
 
 
 >av
@@ -70,6 +70,8 @@ MIT license.
 
 History
 ----
+0.87: Able to edit cookie path. 
+
 0.86: Add non-interact mode, change API domain, fix #2.
 
 0.81: Fix Flvcd module; When failed to concat, try to concat to flv; If failed, leave the original file; Delete some lines to make it easier to intregrate; Fix domain name

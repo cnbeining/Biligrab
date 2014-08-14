@@ -2,9 +2,9 @@
 #coding:utf-8
 # Author: Beining --<ACICFG>
 # Purpose: Yet another danmaku and video file downloader of Bilibili. 
-# Created: 12/10/2013
+# Created: 11/03/2013
 '''
-Biligrab 0.86
+Biligrab 0.87
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
@@ -44,7 +44,7 @@ appkey='85eb6835b0a1034e';
 secretkey = '2ad42749773c441109bdc0191257a664'
 
 
-
+#----------------------------------------------------------------------
 def list_del_repeat(list):
     """delete repeating items in a list, and keep the order.
     http://www.cnblogs.com/infim/archive/2011/03/10/1979615.html"""
@@ -53,31 +53,41 @@ def list_del_repeat(list):
     return(l2)
 
 #----------------------------------------------------------------------
-def find_cid_api(vid, p):
+def calc_sign(string):
+    """str/any->str
+    return MD5."""
+    return str(hashlib.md5(str(string).encode('utf-8')).hexdigest())
+
+#----------------------------------------------------------------------
+def read_cookie(cookiepath):
+    """"""
+    try:
+        cookies_file = open(cookiepath, 'r')
+        cookies = cookies_file.readlines()
+        cookies_file.close()
+        #print(cookies)
+        return cookies
+    except:
+        print('Cannot read cookie, may affect some videos...')
+        return ''
+
+#----------------------------------------------------------------------
+def find_cid_api(vid, p, cookies):
     """find cid and print video detail"""
     global cid
     global partname
     global title
     global videourl
-    cookiepath = './bilicookies'
-    try:
-        cookies = open(cookiepath, 'r').readline()
-        #print(cookies)
-    except:
-        print('Cannot read cookie, may affect some videos...')
-        cookies = ''
     cid = 0
     title = ''
     partname = ''
     if str(p) is '0' or str(p) is '1':
-        str2Hash = 'appkey=85eb6835b0a1034e&id=' + str(vid) + '&type=xml2ad42749773c441109bdc0191257a664'
-        sign_this = hashlib.md5(str2Hash.encode('utf-8')).hexdigest()
-        biliurl = 'https://api.bilibili.com/view?appkey=85eb6835b0a1034e&id=' + str(vid) + '&type=xml&sign=' + sign_this
+        str2Hash = 'appkey=' + str(appkey) + '&id=' + str(vid) + '&type=xml' + str(secretkey)
+        biliurl = 'https://api.bilibili.com/view?appkey=' + str(appkey) + '&id=' + str(vid) + '&type=xml&sign=' + calc_sign(str2Hash)
         print(biliurl)
     else:
-        str2Hash = 'appkey=85eb6835b0a1034e&id=' + str(vid) + '&page=' + str(p) + '&type=xml2ad42749773c441109bdc0191257a664'
-        sign_this = hashlib.md5(str2Hash.encode('utf-8')).hexdigest()
-        biliurl = 'https://api.bilibili.com/view?appkey=85eb6835b0a1034e&id=' + str(vid) + '&page=' + str(p) + '&type=xml&sign=' + sign_this
+        str2Hash = 'appkey=' + str(appkey) + '&id=' + str(vid) + '&page=' + str(p) + '&type=xml' + str(secretkey)
+        biliurl = 'https://api.bilibili.com/view?appkey=' + str(appkey) + '&id=' + str(vid) + '&page=' + str(p) + '&type=xml&sign=' + calc_sign(str2Hash)
         #print(biliurl)
     videourl = 'http://www.bilibili.com/video/av'+ str(vid)+'/index_'+ str(p)+'.html'
     print('Fetching webpage...')
@@ -147,14 +157,14 @@ def find_link_flvcd(videourl):
 
 
 #----------------------------------------------------------------------
-def main(vid, p, oversea):
+def main(vid, p, oversea, cookies):
     global cid
     global partname
     global title
     global videourl
     global is_first_run
     videourl = 'http://www.bilibili.com/video/av'+ str(vid)+'/index_'+ str(p)+'.html'
-
+    # Fix ffmpeg
     output = commands.getstatusoutput('ffmpeg --help')
     if str(output[0]) == '32512':
         print('FFmpeg does not exist! Trying to get you a binary, need root...')
@@ -163,13 +173,12 @@ def main(vid, p, oversea):
     if str(output[0]) == '32512':
         print('aria2c does not exist! Trying to get you a binary, need root... Thanks for @MartianZ \'s work.')
         os.system('sudo curl -o /usr/bin/aria2c https://raw.githubusercontent.com/MartianZ/fakeThunder/master/fakeThunder/aria2c')
-
-    find_cid_api(vid, p)
+    #Start to find cid, api-flvcd
+    find_cid_api(vid, p, cookies)
     global cid
     if cid is 0:
         print('Cannot find cid, trying to do it brutely...')
         find_cid_flvcd(videourl)
-
     if cid is 0:
         is_black3 = str(raw_input('Strange, still cannot find cid... Type y for trying the unpredictable way, or input the cid by yourself, press ENTER to quit.'))
         if 'y' in str(is_black3):
@@ -200,14 +209,14 @@ def main(vid, p, oversea):
             os.makedirs(folder_to_make)
         is_first_run = 1
         os.chdir(folder_to_make)
-
+    # Download Danmaku
     print('Fetching XML...')
     os.system('curl -o "'+filename+'.xml" --compressed  http://comment.bilibili.com/'+cid+'.xml')
     os.system('gzip -d '+cid+'.xml.gz')
     print('The XML file, ' + filename + '.xml should be ready...enjoy!')
     print('Finding video location...')
     #try api
-    sign_this = hashlib.md5('appkey=' + appkey + '&cid=' + cid + secretkey.encode('utf-8')).hexdigest()
+    sign_this = calc_sign('appkey=' + appkey + '&cid=' + cid + secretkey)
     if oversea == '1':
         try:
             request = urllib2.Request('http://interface.bilibili.com/v_cdn_play?appkey=' + appkey + '&cid=' + cid + '&sign=' + sign_this, headers={ 'User-Agent' : 'Biligrab /0.8 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
@@ -250,16 +259,13 @@ def main(vid, p, oversea):
     if rawurl is []:  #hope this never happen
         rawurl = find_link_flvcd(videourl)
         #flvcd
-    #print(rawurl)
     vid_num = len(rawurl)
     if vid_num is 0:
         print('Cannot get download URL!')
         exit()
-    #print(rawurl)
     print(str(vid_num) + ' videos in part ' + str(part_now) + ' to download, fetch yourself a cup of coffee...')
     for i in range(vid_num):
         print('Downloading ' + str(i+1) + ' of ' + str(vid_num) + ' videos in part ' + str(part_now) + '...')
-        #print('aria2c -llog.txt -c -s16 -x16 -k1M --out '+str(i)+'.flv "'+rawurl[i]+'"')
         os.system('aria2c -c -s16 -x16 -k1M --out '+str(i)+'.flv "'+rawurl[i]+'"')
         #os.system('aria2c -larialog.txt -c -s16 -x16 -k1M --out '+str(i)+'.flv "'+rawurl[i]+'"')
         #not debugging, not fun.
@@ -288,7 +294,6 @@ def main(vid, p, oversea):
                 os.system('rm -r '+str(i)+'.flv')
         else:
             print('ERROR: Cannot concatenative files, trying to make flv...')
-
 
 
 #----------------------------------------------------------------------
@@ -344,7 +349,7 @@ def usage():
     """"""
     print('''Usage:
     
-    python biligrab.py (-h) (-a) (-p) (-s)
+    python biligrab.py (-h) (-a) (-p) (-s) (-c)
     
     -h: Default: None
         Print this usage file.
@@ -374,7 +379,12 @@ def usage():
        Use Flvcd to parase the video, but would fail if
        1) The original source DNE, e.g., some old videos
        2) The original source is Letvcloud itself.
-       3) Other unknown reason(s) that stops Flvcd from parase the video.''')
+       3) Other unknown reason(s) that stops Flvcd from parase the video.
+    
+    -c: Default: ./bilicookies
+    The path of cookies.
+    Use cookies to visit member-only videos.''')
+
 
 #----------------------------------------------------------------------
 if __name__=='__main__':
@@ -385,7 +395,7 @@ if __name__=='__main__':
     vid = ''
     oversea = ''
     try:
-        opts, args = getopt.getopt(argv_list, "ha:p:s:", ['help', "av",'part', 'source'])
+        opts, args = getopt.getopt(argv_list, "ha:p:s:c:", ['help', "av",'part', 'source', 'cookie'])
     except getopt.GetoptError:
         usage()
         exit()
@@ -411,10 +421,19 @@ if __name__=='__main__':
                 argv_list.remove('-s')
             except:
                 break
+        if o in ('-c', '--cookie'):
+            cookiepath = a
+            try:
+                argv_list.remove('-c')
+            except:
+                print('No cookie path set, use default: ./bilicookies')
+                cookiepath = './bilicookies'
+                break
     if len(vid) == 0:
         vid = str(raw_input('av'))
         p_raw = str(raw_input('P'))
         oversea = str(input('Source?'))
+        cookiepath = './bilicookies'
     '''
     if len(vid) == 0:
         vid = str(raw_input('Please input: av'))
@@ -430,11 +449,12 @@ if __name__=='__main__':
         print('Oversea not set, use original API(methon 0).')
     print('Your targe download is av' + vid + ', part ' + p_raw + ', from source ' + oversea)
     p_list = get_full_p(p_raw)
+    cookies = read_cookie(cookiepath)
     for p in p_list:
         reload(sys)
         sys.setdefaultencoding('utf-8')
         part_now = str(p)
-        main(vid, p, oversea)
+        main(vid, p, oversea, cookies)
     exit()
 
 
