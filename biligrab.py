@@ -4,7 +4,7 @@
 # Purpose: Yet another danmaku and video file downloader of Bilibili. 
 # Created: 11/03/2013
 '''
-Biligrab 0.87
+Biligrab 0.88
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
@@ -432,7 +432,7 @@ if __name__=='__main__':
     if len(vid) == 0:
         vid = str(raw_input('av'))
         p_raw = str(raw_input('P'))
-        oversea = str(input('Source?'))
+        oversea = str(raw_input('Source?'))
         cookiepath = './bilicookies'
     '''
     if len(vid) == 0:
@@ -445,7 +445,7 @@ if __name__=='__main__':
         print('No part number set, download part 1.')
         p_raw = '1'
     if len(oversea) == 0:
-        oversea = 0
+        oversea = '0'
         print('Oversea not set, use original API(methon 0).')
     print('Your targe download is av' + vid + ', part ' + p_raw + ', from source ' + oversea)
     p_list = get_full_p(p_raw)

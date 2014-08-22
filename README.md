@@ -17,7 +17,7 @@ Usage
 ------
 If you have a Bilibili account, set the cookie with https://github.com/dantmnf/biliupload/blob/master/getcookie.py  will help you to download some of the restricted videos.
 
-Interact mode:
+Interactive mode:
 
 python biligrab.py
 
@@ -49,9 +49,9 @@ You can mix those ways:
 
 0: Use the original way that the player uses. Should gives you the original URL, but may fail if the original video is deleted, and may give you the Letv cloud or avgcideo.com backup.
 
-1: Use the "CDN" API, the so-called "oversea acceleration". Should give you the acgvideo.com backup, but may return original address if video is not backup.
+1: Use the "CDN" API, the so-called "oversea acceleration". Should give you the acgvideo.com backup, but may return original address if video is not backuped.
 
-2: Force to retrieve the original URL, but would fail with videos that does not have "original source", like the "directly upload" with Letv cloud. Use Flvcd to parse the address. Use for for videos backuped with Letv cloud, but you prefer the original Sina address.
+2: Force to retrieve the original URL, but would fail with videos that does not have "original source", like the "directly upload" with Letv cloud. Use Flvcd to parse the address. Use for for videos backuped with Letv cloud, but you prefer the original Sina source, mainly due to better audio quality.
 
 Requirement
 -------
@@ -70,7 +70,9 @@ MIT license.
 
 History
 ----
-0.87: Able to edit cookie path. 
+0.88: Fix #3, 2 typos.
+
+0.87: Able to edit cookie path. Fix cannot read cookie.
 
 0.86: Add non-interact mode, change API domain, fix #2.
 
