@@ -394,6 +394,7 @@ if __name__=='__main__':
     p_raw = ''
     vid = ''
     oversea = ''
+    cookiepath = ''
     try:
         opts, args = getopt.getopt(argv_list, "ha:p:s:c:", ['help', "av",'part', 'source', 'cookie'])
     except getopt.GetoptError:
@@ -441,6 +442,8 @@ if __name__=='__main__':
             print('Cannot download nothing!')
             exit()
     '''
+    if len(cookiepath) == 0:
+        cookiepath = './bilicookies'
     if len(p_raw) == 0:
         print('No part number set, download part 1.')
         p_raw = '1'

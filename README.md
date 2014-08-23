@@ -53,6 +53,12 @@ You can mix those ways:
 
 2: Force to retrieve the original URL, but would fail with videos that does not have "original source", like the "directly upload" with Letv cloud. Use Flvcd to parse the address. Use for for videos backuped with Letv cloud, but you prefer the original Sina source, mainly due to better audio quality.
 
+-c: Default: ./bilicookies
+
+The path of cookies.
+
+Use cookies to visit member-only videos.
+
 Requirement
 -------
 - Python 2.7
@@ -70,6 +76,8 @@ MIT license.
 
 History
 ----
+0.89: Fix #4, force declare the varible, and set the path if not assigned. 
+
 0.88: Fix #3, 2 typos.
 
 0.87: Able to edit cookie path. Fix cannot read cookie.
