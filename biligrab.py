@@ -4,7 +4,7 @@
 # Purpose: Yet another danmaku and video file downloader of Bilibili. 
 # Created: 11/03/2013
 '''
-Biligrab 0.88
+Biligrab 0.89
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
