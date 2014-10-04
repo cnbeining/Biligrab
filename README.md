@@ -57,7 +57,9 @@ You can mix those ways:
 
 The path of cookies.
 
-Use cookies to visit member-only videos.
+Use cookies to visit some member-only videos.
+
+Will use Flvcd to deal with geo-restricted video(s).
 
 Requirement
 -------
@@ -76,6 +78,8 @@ MIT license.
 
 History
 ----
+0.90: Fix if cannot get download URL for some reason(geo location, or API server error), try to use Flvcd to download video. 
+
 0.89: Fix #4, force declare the varible, and set the path if not assigned. 
 
 0.88: Fix #3, 2 typos.

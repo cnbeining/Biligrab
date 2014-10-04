@@ -4,7 +4,7 @@
 # Purpose: Yet another danmaku and video file downloader of Bilibili. 
 # Created: 11/03/2013
 '''
-Biligrab 0.89
+Biligrab 0.90
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
@@ -142,6 +142,7 @@ def find_cid_flvcd(videourl):
 #----------------------------------------------------------------------
 def find_link_flvcd(videourl):
     """"""
+    print('Finding link via Flvcd...')
     request = urllib2.Request('http://www.flvcd.com/parse.php?'+urllib.urlencode([('kw', videourl)]), headers={ 'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
     request.add_header('Accept-encoding', 'gzip')
     response = urllib2.urlopen(request)
@@ -256,12 +257,15 @@ def main(vid, p, oversea, cookies):
                 rawurl.append(node.toxml()[14:-9])
                 #print(str(node.toxml()[14:-9]))
             pass
-    if rawurl is []:  #hope this never happen
+    if len(rawurl) == 0:  #hope this never happen
         rawurl = find_link_flvcd(videourl)
         #flvcd
     vid_num = len(rawurl)
-    if vid_num is 0:
-        print('Cannot get download URL!')
+    if vid_num is 0:  # shit hit the fan
+        rawurl = list(str(raw_input('Cannot get download URL! If you know the url, please enter it now; URL1|URL2...'))).split('|')
+    vid_num = len(rawurl)
+    if vid_num is 0:  # shit really hit the fan
+        print('Cannot get video URL in anyway!')
         exit()
     print(str(vid_num) + ' videos in part ' + str(part_now) + ' to download, fetch yourself a cup of coffee...')
     for i in range(vid_num):
