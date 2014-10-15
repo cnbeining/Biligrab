@@ -23,43 +23,63 @@ python biligrab.py
 
 Or non-interact mode:
 
-```python biligrab.py (-h) (-a) (-p) (-s) (-c)```
+```python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v)```
 
-
->av
-
-The aid, for http://www.bilibili.com/video/av1336405/, aid == 1336405 .
-
->P
-
-Part number.
-
-There are 3 ways you can input the number:
-
-1: Part 1
-
-1~3: Part 1,2,3
-
-1,3,4,5: Part 1,3,4,5
-
-You can mix those ways:
-1~4, 6,7: Part 1,2,3,4,6,7.
-
->Source?
-
-0: Use the original way that the player uses. Should gives you the original URL, but may fail if the original video is deleted, and may give you the Letv cloud or avgcideo.com backup.
-
-1: Use the "CDN" API, the so-called "oversea acceleration". Should give you the acgvideo.com backup, but may return original address if video is not backuped.
-
-2: Force to retrieve the original URL, but would fail with videos that does not have "original source", like the "directly upload" with Letv cloud. Use Flvcd to parse the address. Use for for videos backuped with Letv cloud, but you prefer the original Sina source, mainly due to better audio quality.
-
--c: Default: ./bilicookies
-
-The path of cookies.
-
-Use cookies to visit some member-only videos.
-
-Will use Flvcd to deal with geo-restricted video(s).
+    Usage:
+    
+    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v)
+    
+    -h: Default: None
+        Print this usage file.
+    
+    -a: Default: None
+        The av number.
+        If not set, Biligrab will use the falloff interact mode.
+        
+    -p: Default: 1
+        The part number.
+        Support "~", "," and mix use.
+        Examples:
+            Input        Output
+              1           [1]
+             1,2         [1, 2]
+             1~3        [1, 2, 3]
+            1,2~3       [1, 2, 3]
+                 
+    -s: Default: 0
+    Source to download.
+    0: The original API source, can be Letv backup,
+       and can failed if the original video is not avalable(e.g., deleted)
+    1: The CDN API source, "oversea accelerate".
+       Can be MINICDN backup in Mainland China or oversea.
+       Good to bypass some bangumi's limit.
+    2: Force to use the original source.
+       Use Flvcd to parase the video, but would fail if
+       1) The original source DNE, e.g., some old videos
+       2) The original source is Letvcloud itself.
+       3) Other unknown reason(s) that stops Flvcd from parase the video.
+    For any video that failed to parse, Biligrab will try to use Flvcd.
+    (Mainly for oversea users regarding to copyright-restricted bangumies.)
+    
+    -c: Default: ./bilicookies
+    The path of cookies.
+    Use cookies to visit member-only videos.
+    
+    -d: Default: None
+    Set the desired download software.
+    Biligrab supports aria2c(16 threads), axel(20 threads), wget and curl by far.
+    If not set, Biligrab will detect an avalable one;
+    If none of those is avalable, Biligrab will quit.
+    For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
+    
+    -v Default:None
+        Set the desired download software.
+    Biligrab supports ffmpeg by far.
+    If not set, Biligrab will detect an avalable one;
+    If none of those is avalable, Biligrab will quit.
+    For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
+    Make sure you include a *working* command line example of this software!
+    
 
 Requirement
 -------

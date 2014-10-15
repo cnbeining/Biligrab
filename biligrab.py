@@ -4,10 +4,11 @@
 # Purpose: Yet another danmaku and video file downloader of Bilibili. 
 # Created: 11/03/2013
 '''
-Biligrab 0.90
+Biligrab 0.91
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
+https://github.com/cnbeining/Biligrab
 MIT licence
 '''
 
@@ -29,17 +30,8 @@ import xml.dom.minidom
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-global vid
-global cid
-global partname
-global title
-global videourl
-global part_now
-global is_first_run
+global vid, cid, partname, title, videourl, part_now, is_first_run, appkey, secretkey
 
-
-global appkey
-global secretkey
 appkey='85eb6835b0a1034e';
 secretkey = '2ad42749773c441109bdc0191257a664'
 
@@ -74,10 +66,7 @@ def read_cookie(cookiepath):
 #----------------------------------------------------------------------
 def find_cid_api(vid, p, cookies):
     """find cid and print video detail"""
-    global cid
-    global partname
-    global title
-    global videourl
+    global cid, partname, title, videourl
     cid = 0
     title = ''
     partname = ''
@@ -92,7 +81,7 @@ def find_cid_api(vid, p, cookies):
     videourl = 'http://www.bilibili.com/video/av'+ str(vid)+'/index_'+ str(p)+'.html'
     print('Fetching webpage...')
     try:
-        request = urllib2.Request(biliurl, headers={ 'User-Agent' : 'Biligrab /0.8 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' , 'Cookie': cookies})
+        request = urllib2.Request(biliurl, headers={ 'User-Agent' : 'Biligrab /0.9 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' , 'Cookie': cookies})
         response = urllib2.urlopen(request)
         data = response.read()
         dom = parseString(data)
@@ -117,10 +106,7 @@ def find_cid_api(vid, p, cookies):
 #----------------------------------------------------------------------
 def find_cid_flvcd(videourl):
     """"""
-    global vid
-    global cid
-    global partname
-    global title
+    global vid, cid, partname, title
     print('Fetching webpage via Flvcd...')
     request = urllib2.Request(videourl, headers={ 'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
     request.add_header('Accept-encoding', 'gzip')
@@ -155,25 +141,80 @@ def find_link_flvcd(videourl):
             rawurlflvcd = rawurlflvcd.split('|')
             return rawurlflvcd
 
+#----------------------------------------------------------------------
+def check_dependencies(download_software, concat_software):
+    """None->str,str
+    Will give softwares for concat or download."""
+    concat_software_list = ['ffmpeg', 'avconv']
+    download_software_list = ['aria2c', 'axel', 'wget', 'curl']
+    name_list = [[concat_software, concat_software_list], [download_software, download_software_list]]
+    for name in name_list:
+        if name[0].strip().lower() not in name[1] :  # Unsupported software
+            if  len(name[0].strip()) != 0:  #Set a Unsupported software,  not blank
+                print('WARNING: Requested Software not supported!\n         Biligrab only support these following software(s):\n         ' + str(name[1]) + '\n         Trying to find available one...')
+            for software in name[1]:
+                output = commands.getstatusoutput(software + ' --help')
+                if str(output[0]) != '32512':  #If exist
+                    name[0] = software
+                    break
+        if name[0] == '':
+            print('ERROR: Cannot find software in ' + str(name[1]) + ' !')
+            exit()
+    return name_list[0][0], name_list[1][0]
+
+#----------------------------------------------------------------------
+def download_video(part_number, download_software, video_link):
+    """"""
+    if download_software == 'aria2c':
+        os.system('aria2c -c -s16 -x16 -k1M --out '+part_number+'.flv "'+video_link+'"')
+    elif download_software == 'wget':
+        os.system('wget -c -O '+part_number+'.flv "'+video_link+'"')
+    elif download_software == 'curl':
+        os.system('curl -L -C -o '+part_number+'.flv "'+video_link+'"')
+    elif download_software == 'axel':
+        os.system('curl -n 20 -o '+part_number+'.flv "'+video_link+'"')
 
 
 #----------------------------------------------------------------------
-def main(vid, p, oversea, cookies):
-    global cid
-    global partname
-    global title
-    global videourl
-    global is_first_run
+def concat_videos(concat_software, vid_num, filename):
+    """str,str->None"""
+    if concat_software == 'ffmpeg':
+        f = open('ff.txt', 'w')
+        ff = ''
+        os.getcwd()
+        for i in range(vid_num):
+            ff = ff + 'file \'' + str(os.getcwd()) + '/'+ str(i) + '.flv\'\n'
+        ff = ff.encode("utf8")
+        f.write(ff)
+        f.close()
+        print('Concating videos...')
+        os.system('ffmpeg -f concat -i ff.txt -c copy "'+filename+'".mp4')
+        if os.path.isfile(str(filename+'.mp4')):
+            os.system('rm -r ff.txt')
+            for i in range(vid_num):
+                os.system('rm -r '+str(i)+'.flv')
+            print('Done, enjoy yourself!')
+        else:
+            print('ERROR: Cannot concatenative files, trying to make flv...')
+            os.system('ffmpeg -f concat -i ff.txt -c copy "'+filename+'".flv')
+            if os.path.isfile(str(filename+'.flv')):
+                print('FLV file made. Not possible to mux to MP4, highly likely due to audio format.')
+                os.system('rm -r ff.txt')
+                for i in range(vid_num):
+                    os.system('rm -r '+str(i)+'.flv')
+            else:
+                print('ERROR: Cannot concatenative files!')
+    elif concat_software == 'avconv':
+        pass
+
+
+#----------------------------------------------------------------------
+def main(vid, p, oversea, cookies, download_software, concat_software):
+    global cid, partname, title, videourl, is_first_run
     videourl = 'http://www.bilibili.com/video/av'+ str(vid)+'/index_'+ str(p)+'.html'
-    # Fix ffmpeg
-    output = commands.getstatusoutput('ffmpeg --help')
-    if str(output[0]) == '32512':
-        print('FFmpeg does not exist! Trying to get you a binary, need root...')
-        os.system('sudo curl -o /usr/bin/ffmpeg https://raw.githubusercontent.com/superwbd/ABPlayerHTML5-Py--nix/master/ffmpeg')
-    output = commands.getstatusoutput('aria2c --help')
-    if str(output[0]) == '32512':
-        print('aria2c does not exist! Trying to get you a binary, need root... Thanks for @MartianZ \'s work.')
-        os.system('sudo curl -o /usr/bin/aria2c https://raw.githubusercontent.com/MartianZ/fakeThunder/master/fakeThunder/aria2c')
+    # Check both software
+    concat_software, download_software = check_dependencies(download_software, concat_software)
+    print(concat_software, download_software)
     #Start to find cid, api-flvcd
     find_cid_api(vid, p, cookies)
     global cid
@@ -220,18 +261,18 @@ def main(vid, p, oversea, cookies):
     sign_this = calc_sign('appkey=' + appkey + '&cid=' + cid + secretkey)
     if oversea == '1':
         try:
-            request = urllib2.Request('http://interface.bilibili.com/v_cdn_play?appkey=' + appkey + '&cid=' + cid + '&sign=' + sign_this, headers={ 'User-Agent' : 'Biligrab /0.8 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
+            request = urllib2.Request('http://interface.bilibili.com/v_cdn_play?appkey=' + appkey + '&cid=' + cid + '&sign=' + sign_this, headers={ 'User-Agent' : 'Biligrab /0.9 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
         except:
             print('ERROR: Cannot connect to CDN API server!')
     elif oversea is '2':
         #Force get oriurl
         try:
-            request = urllib2.Request('http://interface.bilibili.com/player?appkey=' + appkey + '&cid=' + cid + '&sign=' + sign_this, headers={ 'User-Agent' : 'Biligrab /0.8 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
+            request = urllib2.Request('http://interface.bilibili.com/player?appkey=' + appkey + '&cid=' + cid + '&sign=' + sign_this, headers={ 'User-Agent' : 'Biligrab /0.9 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
         except:
             print('ERROR: Cannot connect to original source API server!')
     else:
         try:
-            request = urllib2.Request('http://interface.bilibili.com/playurl?appkey=' + appkey + '&cid=' + cid + '&sign=' + sign_this, headers={ 'User-Agent' : 'Biligrab /0.8 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
+            request = urllib2.Request('http://interface.bilibili.com/playurl?appkey=' + appkey + '&cid=' + cid + '&sign=' + sign_this, headers={ 'User-Agent' : 'Biligrab /0.9 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
         except:
             print('ERROR: Cannot connect to normal API server!')
     response = urllib2.urlopen(request)
@@ -265,39 +306,19 @@ def main(vid, p, oversea, cookies):
         rawurl = list(str(raw_input('Cannot get download URL! If you know the url, please enter it now; URL1|URL2...'))).split('|')
     vid_num = len(rawurl)
     if vid_num is 0:  # shit really hit the fan
-        print('Cannot get video URL in anyway!')
+        print('Cannot get video URL anyway!')
         exit()
     print(str(vid_num) + ' videos in part ' + str(part_now) + ' to download, fetch yourself a cup of coffee...')
     for i in range(vid_num):
+        video_link = rawurl[i]
+        part_number = str(i)
         print('Downloading ' + str(i+1) + ' of ' + str(vid_num) + ' videos in part ' + str(part_now) + '...')
-        os.system('aria2c -c -s16 -x16 -k1M --out '+str(i)+'.flv "'+rawurl[i]+'"')
-        #os.system('aria2c -larialog.txt -c -s16 -x16 -k1M --out '+str(i)+'.flv "'+rawurl[i]+'"')
-        #not debugging, not fun.
-    f = open('ff.txt', 'w')
-    ff = ''
-    os.getcwd()
-    for i in range(vid_num):
-        ff = ff + 'file \'' + str(os.getcwd()) + '/'+ str(i) + '.flv\'\n'
-    ff = ff.encode("utf8")
-    f.write(ff)
-    f.close()
-    print('Concating videos...')
-    os.system('ffmpeg -f concat -i ff.txt -c copy "'+filename+'".mp4')
-    if os.path.isfile(str(filename+'.mp4')):
-        os.system('rm -r ff.txt')
-        for i in range(vid_num):
-            os.system('rm -r '+str(i)+'.flv')
-        print('Done, enjoy yourself!')
-    else:
-        print('ERROR: Cannot concatenative files, trying to make flv...')
-        os.system('ffmpeg -f concat -i ff.txt -c copy "'+filename+'".flv')
-        if os.path.isfile(str(filename+'.flv')):
-            print('FLV file made. Not possible to mux to MP4, highly likely due to audio format.')
-            os.system('rm -r ff.txt')
-            for i in range(vid_num):
-                os.system('rm -r '+str(i)+'.flv')
-        else:
-            print('ERROR: Cannot concatenative files, trying to make flv...')
+        #Call a function to support multiple download softwares
+        download_video(part_number, download_software, video_link)
+    concat_videos(concat_software, vid_num, filename)
+    print('INFO: DONE!')
+    exit()
+
 
 
 #----------------------------------------------------------------------
@@ -351,9 +372,19 @@ def get_full_p(p_raw):
 #----------------------------------------------------------------------
 def usage():
     """"""
-    print('''Usage:
+    print('''
+    Biligrab
     
-    python biligrab.py (-h) (-a) (-p) (-s) (-c)
+    https://github.com/cnbeining/Biligrab
+    http://www.cnbeining.com/
+    
+    Beining@ACICFG
+    
+    
+    
+    Usage:
+    
+    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v)
     
     -h: Default: None
         Print this usage file.
@@ -384,10 +415,27 @@ def usage():
        1) The original source DNE, e.g., some old videos
        2) The original source is Letvcloud itself.
        3) Other unknown reason(s) that stops Flvcd from parase the video.
+    For any video that failed to parse, Biligrab will try to use Flvcd.
+    (Mainly for oversea users regarding to copyright-restricted bangumies.)
     
     -c: Default: ./bilicookies
     The path of cookies.
-    Use cookies to visit member-only videos.''')
+    Use cookies to visit member-only videos.
+    
+    -d: Default: None
+    Set the desired download software.
+    Biligrab supports aria2c(16 threads), axel(20 threads), wget and curl by far.
+    If not set, Biligrab will detect an avalable one;
+    If none of those is avalable, Biligrab will quit.
+    For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
+    
+    -v Default:None
+        Set the desired download software.
+    Biligrab supports ffmpeg by far.
+    If not set, Biligrab will detect an avalable one;
+    If none of those is avalable, Biligrab will quit.
+    For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
+    Make sure you include a *working* command line example of this software!''')
 
 
 #----------------------------------------------------------------------
@@ -395,12 +443,9 @@ if __name__=='__main__':
     is_first_run = 0
     argv_list = []
     argv_list = sys.argv[1:]
-    p_raw = ''
-    vid = ''
-    oversea = ''
-    cookiepath = ''
+    p_raw, vid, oversea, cookiepath, download_software, concat_software = '', '', '', '', '', ''
     try:
-        opts, args = getopt.getopt(argv_list, "ha:p:s:c:", ['help', "av",'part', 'source', 'cookie'])
+        opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:", ['help', "av",'part', 'source', 'cookie', 'download', 'concat'])
     except getopt.GetoptError:
         usage()
         exit()
@@ -434,6 +479,18 @@ if __name__=='__main__':
                 print('No cookie path set, use default: ./bilicookies')
                 cookiepath = './bilicookies'
                 break
+        if o in ('-d', '--download'):
+            download_software = a
+            try:
+                argv_list.remove('-d')
+            except:
+                break
+        if o in ('-v', '--concat'):
+            concat_software = a
+            try:
+                argv_list.remove('-v')
+            except:
+                break
     if len(vid) == 0:
         vid = str(raw_input('av'))
         p_raw = str(raw_input('P'))
@@ -461,28 +518,7 @@ if __name__=='__main__':
         reload(sys)
         sys.setdefaultencoding('utf-8')
         part_now = str(p)
-        main(vid, p, oversea, cookies)
+        main(vid, p, oversea, cookies, download_software, concat_software)
     exit()
 
 
-
-'''
-        data_list = data.split('\r')
-        for lines in data_list:
-            lines = str(lines)
-            if '<url>' in lines:
-                if 'youku'  in lines:
-                    url = lines[17:-9]
-                elif 'sina' in lines:
-                    url = lines[16:-9]
-                elif 'qq.com' in lines:
-                    url = lines[17:-9]
-                elif 'letv.com' in lines:
-                    url = lines[17:-9]
-                    break
-                elif 'acgvideo' in lines:
-                    url = lines[17:-9]
-                    is_local = 1
-                rawurl.append(url)
-            if 'backup_url' in lines and is_local is 1:
-                break'''
