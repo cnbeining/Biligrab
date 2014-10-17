@@ -98,6 +98,10 @@ MIT license.
 
 History
 ----
+0.92: Fix wrongly exit when downloading multiple parts.
+
+0.91: Add support to axel, wget, curl and easy way to add more support; Add easy way to add more concat support; Able to select desired software and auto detect; Change dependencies check; Code beauty.
+
 0.90: Fix if cannot get download URL for some reason(geo location, or API server error), try to use Flvcd to download video. 
 
 0.89: Fix #4, force declare the varible, and set the path if not assigned. 

@@ -4,7 +4,7 @@
 # Purpose: Yet another danmaku and video file downloader of Bilibili. 
 # Created: 11/03/2013
 '''
-Biligrab 0.91
+Biligrab 0.92
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
@@ -316,8 +316,7 @@ def main(vid, p, oversea, cookies, download_software, concat_software):
         #Call a function to support multiple download softwares
         download_video(part_number, download_software, video_link)
     concat_videos(concat_software, vid_num, filename)
-    print('INFO: DONE!')
-    exit()
+    print('INFO: Part Done!')
 
 
 
