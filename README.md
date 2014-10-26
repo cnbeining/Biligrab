@@ -23,11 +23,9 @@ python biligrab.py
 
 Or non-interact mode:
 
-```python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v)```
-
+```python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l)```
     Usage:
-    
-    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v)
+
     
     -h: Default: None
         Print this usage file.
@@ -73,19 +71,21 @@ Or non-interact mode:
     For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
     
     -v Default:None
-        Set the desired download software.
+    Set the desired download software.
     Biligrab supports ffmpeg by far.
     If not set, Biligrab will detect an avalable one;
     If none of those is avalable, Biligrab will quit.
     For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
     Make sure you include a *working* command line example of this software!
     
+    -l Default: 0
+    Dump the log of the output for better debugging.
+
 
 Requirement
 -------
 - Python 2.7
-- aria2c
-- curl
+- curl + None/aria2c/wget/axel
 - ffmpeg
 
 Author
@@ -98,6 +98,8 @@ MIT license.
 
 History
 ----
+0.93: Fix error when handling filenames containing ```/\&```, thanks to @solimot 's report; Add log mode, which can be enabled by ```-l 1 ```; Clean multiple headers; Rearrange global varibles.
+
 0.92: Fix wrongly exit when downloading multiple parts.
 
 0.91: Add support to axel, wget, curl and easy way to add more support; Add easy way to add more concat support; Able to select desired software and auto detect; Change dependencies check; Code beauty.
