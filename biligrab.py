@@ -4,7 +4,7 @@
 # Purpose: Yet another danmaku and video file downloader of Bilibili. 
 # Created: 11/03/2013
 '''
-Biligrab 0.93
+Biligrab 0.94
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
@@ -30,13 +30,13 @@ import xml.dom.minidom
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-global vid, cid, partname, title, videourl, part_now, is_first_run, APPKEY, SECRETKEY, LOG_LEVEL
+global vid, cid, partname, title, videourl, part_now, is_first_run, APPKEY, SECRETKEY, LOG_LEVEL, VER
 
 cookies = ''
 LOG_LEVEL = 0
 APPKEY='85eb6835b0a1034e';
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-BILIGRAB_HEADER = {'User-Agent' : 'Biligrab /0.9 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' , 'Cookie': cookies}
+VER = 0.94
 FAKE_HEADER = {'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
 
 #----------------------------------------------------------------------
@@ -243,6 +243,30 @@ def concat_videos(concat_software, vid_num, filename):
     elif concat_software == 'avconv':
         pass
 
+#----------------------------------------------------------------------
+def find_video_address_api(cid, header, method):
+    """"""
+    sign_this = calc_sign('appkey=' + APPKEY + '&cid=' + cid + SECRETKEY)
+    if method == '1':
+        try:
+            request = urllib2.Request('http://interface.bilibili.com/v_cdn_play?appkey=' + APPKEY + '&cid=' + cid + '&sign=' + sign_this, headers = header)
+        except:
+            print('ERROR: Cannot connect to CDN API server!')
+    elif method is '2':
+        #Force get oriurl
+        try:
+            request = urllib2.Request('http://interface.bilibili.com/player?appkey=' + APPKEY + '&cid=' + cid + '&sign=' + sign_this, headers = header)
+        except:
+            print('ERROR: Cannot connect to original source API server!')
+    else:
+        try:
+            request = urllib2.Request('http://interface.bilibili.com/playurl?appkey=' + APPKEY + '&cid=' + cid + '&sign=' + sign_this, headers = header)
+        except:
+            print('ERROR: Cannot connect to normal API server!')
+    response = urllib2.urlopen(request)
+    data = response.read()
+    return data
+
 
 #----------------------------------------------------------------------
 def main(vid, p, oversea, cookies, download_software, concat_software):
@@ -294,30 +318,21 @@ def main(vid, p, oversea, cookies, download_software, concat_software):
     print('INFO: The XML file, ' + filename + '.xml should be ready...enjoy!')
     print('INFO: Finding video location...')
     #try api
-    sign_this = calc_sign('appkey=' + APPKEY + '&cid=' + cid + SECRETKEY)
-    if oversea == '1':
-        try:
-            request = urllib2.Request('http://interface.bilibili.com/v_cdn_play?appkey=' + APPKEY + '&cid=' + cid + '&sign=' + sign_this, headers = BILIGRAB_HEADER)
-        except:
-            print('ERROR: Cannot connect to CDN API server!')
-    elif oversea is '2':
-        #Force get oriurl
-        try:
-            request = urllib2.Request('http://interface.bilibili.com/player?appkey=' + APPKEY + '&cid=' + cid + '&sign=' + sign_this, headers = BILIGRAB_HEADER)
-        except:
-            print('ERROR: Cannot connect to original source API server!')
-    else:
-        try:
-            request = urllib2.Request('http://interface.bilibili.com/playurl?appkey=' + APPKEY + '&cid=' + cid + '&sign=' + sign_this, headers = BILIGRAB_HEADER)
-        except:
-            print('ERROR: Cannot connect to normal API server!')
-    response = urllib2.urlopen(request)
-    data = response.read()
+    data = find_video_address_api(cid, BILIGRAB_HEADER, oversea)
     if LOG_LEVEL == 1:
         print('Dumping info...')
         print('=======================DUMP DATA==================')
         print(data)
         print('========================DATA END==================')
+    for l in data.split('\n'):  #In case shit happens
+        if 'error.mp4' in l:
+            print('WARNING: API header may be blocked! Using fake one instead...')
+            data = find_video_address_api(cid, FAKE_HEADER, oversea)
+            if LOG_LEVEL == 1:
+                print('Dumping info...')
+                print('=======================DUMP DATA==================')
+                print(data)
+                print('========================DATA END==================')
     rawurl = []
     originalurl = ''
     if oversea is '2':
@@ -457,6 +472,7 @@ def usage():
        3) Other unknown reason(s) that stops Flvcd from parase the video.
     For any video that failed to parse, Biligrab will try to use Flvcd.
     (Mainly for oversea users regarding to copyright-restricted bangumies.)
+    If the API is blocked, Biligrab would fake the UA.
     
     -c: Default: ./bilicookies
     The path of cookies.
@@ -565,7 +581,8 @@ if __name__=='__main__':
     print('INFO: Your targe download is av' + vid + ', part ' + p_raw + ', from source ' + oversea)
     p_list = get_full_p(p_raw)
     cookies = read_cookie(cookiepath)
-    BILIGRAB_HEADER = {'User-Agent' : 'Biligrab /0.9 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' , 'Cookie': cookies[0]}
+    global BILIGRAB_HEADER
+    BILIGRAB_HEADER = {'User-Agent' : 'Biligrab / ' + str(VER) + ' (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' , 'Cookie': cookies[0]}
     if LOG_LEVEL == 1:
         print('!!!!!!!!!!!!!!!!!!!!!!!\nWARNING: This log contains some sensive data. You may want to delete some part of the data before you post it publicly!\n!!!!!!!!!!!!!!!!!!!!!!!')
         print(BILIGRAB_HEADER)

@@ -26,7 +26,6 @@ Or non-interact mode:
 ```python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l)```
     Usage:
 
-    
     -h: Default: None
         Print this usage file.
     
@@ -58,6 +57,7 @@ Or non-interact mode:
        3) Other unknown reason(s) that stops Flvcd from parase the video.
     For any video that failed to parse, Biligrab will try to use Flvcd.
     (Mainly for oversea users regarding to copyright-restricted bangumies.)
+    If the API is blocked, Biligrab would fake the UA.
     
     -c: Default: ./bilicookies
     The path of cookies.
@@ -81,7 +81,6 @@ Or non-interact mode:
     -l Default: 0
     Dump the log of the output for better debugging.
 
-
 Requirement
 -------
 - Python 2.7
@@ -98,6 +97,8 @@ MIT license.
 
 History
 ----
+0.94: Add faking UA to bypass blocking; Add auto-generate UA; Rewrite API logic.
+
 0.93: Fix error when handling filenames containing ```/\&```, thanks to @solimot 's report; Add log mode, which can be enabled by ```-l 1 ```; Clean multiple headers; Rearrange global varibles.
 
 0.92: Fix wrongly exit when downloading multiple parts.
