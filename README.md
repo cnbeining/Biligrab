@@ -11,7 +11,7 @@ Auto concat and convert to MP4 file(s), direct integrate with Mukioplayer-Py-Mac
 
 Interact and non-interact mode for different situations.
 
-An intergration with Danmaku2ass(https://github.com/m13253/danmaku2ass) is fulfilled by m13253 with biligrab-danmaku2ass(https://github.com/m13253/biligrab-danmaku2ass), which can convert danmaku to .ass file.
+Intergrated with Danmaku2ass(https://github.com/m13253/danmaku2ass, GPL v2) by m13253, able to convert danmaku to ASS subtitle.
 
 Usage
 ------
@@ -23,9 +23,9 @@ python biligrab.py
 
 Or non-interact mode:
 
-```python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l)```
-    Usage:
 
+    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p)
+    
     -h: Default: None
         Print this usage file.
     
@@ -70,7 +70,7 @@ Or non-interact mode:
     If none of those is avalable, Biligrab will quit.
     For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
     
-    -v Default:None
+    -v: Default:None
     Set the desired download software.
     Biligrab supports ffmpeg by far.
     If not set, Biligrab will detect an avalable one;
@@ -78,14 +78,30 @@ Or non-interact mode:
     For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
     Make sure you include a *working* command line example of this software!
     
-    -l Default: 0
+    -l: Default: 0
     Dump the log of the output for better debugging.
+    
+    -e: Default: 0
+    Export Danmaku to ASS file.
+    Fulfilled with danmaku2ass(https://github.com/m13253/danmaku2ass),
+    Author: @m13253, GPLv2 License.
+    !!!!!!!!WARNING!!!!!!!!
+    This function requires Python3, and callable via 'python3' !
+    
+    -p: Default: None
+    Set the probe software.
+    Biligrab supports Mediainfo and FFprobe.
+    If not set, Biligrab will detect an avalable one;
+    If none of those is avalable, Biligrab will quit.
+    For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
+    Make sure you include a *working* command line example of this software!
 
 Requirement
 -------
 - Python 2.7
 - curl + None/aria2c/wget/axel
 - ffmpeg
+- Python 3.x(for danmaku2ass)
 
 Author
 -----
@@ -95,8 +111,12 @@ License
 -----
 MIT license.
 
+The Danmaku2ass part belongs to @m13253, GPLv2 license.
+
 History
 ----
+0.95: Add danmaku2ass, able to convert danmaku to ass file; Fix axel error.
+
 0.94: Add faking UA to bypass blocking; Add auto-generate UA; Rewrite API logic.
 
 0.93: Fix error when handling filenames containing ```/\&```, thanks to @solimot 's report; Add log mode, which can be enabled by ```-l 1 ```; Clean multiple headers; Rearrange global varibles.

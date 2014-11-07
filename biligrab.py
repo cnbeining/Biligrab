@@ -2,9 +2,9 @@
 #coding:utf-8
 # Author: Beining --<ACICFG>
 # Purpose: Yet another danmaku and video file downloader of Bilibili. 
-# Created: 11/03/2013
+# Created: 11/06/2013
 '''
-Biligrab 0.94
+Biligrab 0.95
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
@@ -30,14 +30,15 @@ import xml.dom.minidom
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-global vid, cid, partname, title, videourl, part_now, is_first_run, APPKEY, SECRETKEY, LOG_LEVEL, VER
+global vid, cid, partname, title, videourl, part_now, is_first_run, APPKEY, SECRETKEY, LOG_LEVEL, VER, LOCATION_DIR, VIDEO_FORMAT
 
-cookies = ''
+cookies,VIDEO_FORMAT = '', ''
 LOG_LEVEL = 0
 APPKEY='85eb6835b0a1034e';
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = 0.94
+VER = 0.95
 FAKE_HEADER = {'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+LOCATION_DIR = os.getcwd()
 
 #----------------------------------------------------------------------
 def list_del_repeat(list):
@@ -173,12 +174,14 @@ def find_link_flvcd(videourl):
             return rawurlflvcd
 
 #----------------------------------------------------------------------
-def check_dependencies(download_software, concat_software):
-    """None->str,str
-    Will give softwares for concat or download."""
+def check_dependencies(download_software, concat_software, probe_software):
+    """None->str,str,str
+    Will give softwares for concat, download and probe.
+    The detection of Python3 is located at the end of Main function."""
     concat_software_list = ['ffmpeg', 'avconv']
     download_software_list = ['aria2c', 'axel', 'wget', 'curl']
-    name_list = [[concat_software, concat_software_list], [download_software, download_software_list]]
+    probe_software_list = ['mediainfo', 'ffprobe']
+    name_list = [[concat_software, concat_software_list], [download_software, download_software_list], [probe_software, probe_software_list]]
     for name in name_list:
         if name[0].strip().lower() not in name[1] :  # Unsupported software
             if  len(name[0].strip()) != 0:  #Set a Unsupported software,  not blank
@@ -191,7 +194,7 @@ def check_dependencies(download_software, concat_software):
         if name[0] == '':
             print('FATAL: Cannot find software in ' + str(name[1]) + ' !')
             exit()
-    return name_list[0][0], name_list[1][0]
+    return name_list[0][0], name_list[1][0], name_list[2][0]
 
 #----------------------------------------------------------------------
 def download_video(part_number, download_software, video_link):
@@ -203,12 +206,13 @@ def download_video(part_number, download_software, video_link):
     elif download_software == 'curl':
         os.system('curl -L -C -o '+part_number+'.flv "'+video_link+'"')
     elif download_software == 'axel':
-        os.system('curl -n 20 -o '+part_number+'.flv "'+video_link+'"')
+        os.system('axel -n 20 -o '+part_number+'.flv "'+video_link+'"')
 
 
 #----------------------------------------------------------------------
 def concat_videos(concat_software, vid_num, filename):
     """str,str->None"""
+    global VIDEO_FORMAT
     if concat_software == 'ffmpeg':
         f = open('ff.txt', 'w')
         ff = ''
@@ -225,6 +229,7 @@ def concat_videos(concat_software, vid_num, filename):
             print('========================DATA END==================')
         print('INFO: Concating videos...')
         os.system('ffmpeg -f concat -i ff.txt -c copy "'+filename+'".mp4')
+        VIDEO_FORMAT = 'mp4'
         if os.path.isfile(str(filename+'.mp4')):
             os.system('rm -r ff.txt')
             for i in range(vid_num):
@@ -233,6 +238,7 @@ def concat_videos(concat_software, vid_num, filename):
         else:
             print('ERROR: Cannot concatenative files, trying to make flv...')
             os.system('ffmpeg -f concat -i ff.txt -c copy "'+filename+'".flv')
+            VIDEO_FORMAT = 'flv'
             if os.path.isfile(str(filename+'.flv')):
                 print('WARNING: FLV file made. Not possible to mux to MP4, highly likely due to audio format.')
                 os.system('rm -r ff.txt')
@@ -269,11 +275,62 @@ def find_video_address_api(cid, header, method):
 
 
 #----------------------------------------------------------------------
-def main(vid, p, oversea, cookies, download_software, concat_software):
+def convert_ass(xml_name, filename, resolution):
+    """A simple way to do that."""
+    xml_abspath = os.path.abspath(xml_name)
+    ass_name = filename + '.ass'
+    os.system('python3 ' + LOCATION_DIR + '/danmaku2ass.py -o '  + ass_name + ' -s ' + resolution + ' -fs 48   -a 0.8 -l 5 '+ xml_abspath)
+    print('INFO: Converted to ASS!')
+
+#----------------------------------------------------------------------
+def get_resolution(filename, probe_software):
+    """str,str-.str"""
+    resolution = ''
+    filename = filename + '.' + VIDEO_FORMAT
+    if probe_software == 'mediainfo':
+        resolution = get_resolution_mediainfo(filename)
+    if probe_software == 'ffprobe':
+        resolution = get_resolution_ffprobe(filename)
+    if LOG_LEVEL == 1:
+        print('DEBUG: Software: ' + probe_software + ', resolution' + resolution)
+    return resolution
+
+#----------------------------------------------------------------------
+def get_resolution_mediainfo(filename):
+    """str->str
+    1920x1080
+    path to dimention"""
+    return str(os.popen('mediainfo \'--Inform=Video;%Width%x%Height%\' \'' + filename + '\'').read()).strip()
+
+#----------------------------------------------------------------------
+def get_resolution_ffprobe(filename):
+    '''str->str
+    1920x1080'''
+    width = ''
+    height = ''
+    cmnd = ['ffprobe', '-show_format', '-show_streams' ,'-pretty', '-loglevel', 'quiet', filename]
+    p = subprocess.Popen(cmnd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    #print filename
+    out, err =  p.communicate()
+    if err:
+        print err
+        return None
+    try:
+        for line in out.split():
+            if 'width=' in line:
+                width = line.split('=')[1]
+            if 'height=' in line:
+                height = line.split('=')[1]
+    except:
+        return None
+    return width + 'x' + height
+
+#----------------------------------------------------------------------
+def main(vid, p, oversea, cookies, download_software, concat_software, is_export, probe_software):
     global cid, partname, title, videourl, is_first_run
     videourl = 'http://www.bilibili.com/video/av'+ str(vid)+'/index_'+ str(p)+'.html'
     # Check both software
-    concat_software, download_software = check_dependencies(download_software, concat_software)
+    concat_software, download_software, probe_software = check_dependencies(download_software, concat_software, probe_software)
     print(concat_software, download_software)
     #Start to find cid, api-flvcd
     find_cid_api(vid, p, cookies)
@@ -372,7 +429,15 @@ def main(vid, p, oversea, cookies, download_software, concat_software):
         #Call a function to support multiple download softwares
         download_video(part_number, download_software, video_link)
     concat_videos(concat_software, vid_num, filename)
+    if is_export == 1:
+        print('INFO: Converting danmaku to ASS file...')
+        xml_name = filename + '.xml'
+        print('INFO: Trying to get resolution...')
+        resolution = get_resolution(filename, probe_software)
+        print(resolution)
+        convert_ass(xml_name, filename, resolution)
     print('INFO: Part Done!')
+
 
 
 
@@ -439,7 +504,7 @@ def usage():
     
     Usage:
     
-    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l)
+    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p)
     
     -h: Default: None
         Print this usage file.
@@ -485,7 +550,7 @@ def usage():
     If none of those is avalable, Biligrab will quit.
     For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
     
-    -v Default:None
+    -v: Default:None
     Set the desired download software.
     Biligrab supports ffmpeg by far.
     If not set, Biligrab will detect an avalable one;
@@ -493,18 +558,34 @@ def usage():
     For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
     Make sure you include a *working* command line example of this software!
     
-    -l Default: 0
-    Dump the log of the output for better debugging.''')
+    -l: Default: 0
+    Dump the log of the output for better debugging.
+    
+    -e: Default: 0
+    Export Danmaku to ASS file.
+    Fulfilled with danmaku2ass(https://github.com/m13253/danmaku2ass),
+    Author: @m13253, GPLv2 License.
+    !!!!!!!!WARNING!!!!!!!!
+    This function requires Python3, and callable via 'python3' !
+    
+    -p: Default: None
+    Set the probe software.
+    Biligrab supports Mediainfo and FFprobe.
+    If not set, Biligrab will detect an avalable one;
+    If none of those is avalable, Biligrab will quit.
+    For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
+    Make sure you include a *working* command line example of this software!
+    ''')
 
 
 #----------------------------------------------------------------------
 if __name__=='__main__':
-    is_first_run = 0
+    is_first_run, is_export = 0, 0
     argv_list = []
     argv_list = sys.argv[1:]
-    p_raw, vid, oversea, cookiepath, download_software, concat_software = '', '', '', '', '', ''
+    p_raw, vid, oversea, cookiepath, download_software, concat_software, probe_software = '', '', '', '', '', '', ''
     try:
-        opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:l:", ['help', "av",'part', 'source', 'cookie', 'download', 'concat', 'log'])
+        opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:l:e:b:", ['help', "av",'part', 'source', 'cookie', 'download', 'concat', 'log', 'export', 'probe'])
     except getopt.GetoptError:
         usage()
         exit()
@@ -558,6 +639,19 @@ if __name__=='__main__':
             except:
                 LOG_LEVEL = 0
                 break
+        if o in ('-e', '--export'):
+            is_export = int(a)
+            try:
+                argv_list.remove('-e')
+            except:
+                is_export = 0
+                break
+        if o in ('-b', '--probe'):
+            probe_software = a
+            try:
+                argv_list.remove('-b')
+            except:
+                break
     if len(vid) == 0:
         vid = str(raw_input('av'))
         p_raw = str(raw_input('P'))
@@ -582,6 +676,8 @@ if __name__=='__main__':
     p_list = get_full_p(p_raw)
     cookies = read_cookie(cookiepath)
     global BILIGRAB_HEADER
+    if is_export == 1:
+        print('INFO: EXPORT!!!!!!!!!')
     BILIGRAB_HEADER = {'User-Agent' : 'Biligrab / ' + str(VER) + ' (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' , 'Cookie': cookies[0]}
     if LOG_LEVEL == 1:
         print('!!!!!!!!!!!!!!!!!!!!!!!\nWARNING: This log contains some sensive data. You may want to delete some part of the data before you post it publicly!\n!!!!!!!!!!!!!!!!!!!!!!!')
@@ -601,7 +697,7 @@ if __name__=='__main__':
         reload(sys)
         sys.setdefaultencoding('utf-8')
         part_now = str(p)
-        main(vid, p, oversea, cookies, download_software, concat_software)
+        main(vid, p, oversea, cookies, download_software, concat_software, is_export, probe_software)
     exit()
 
 
