@@ -139,6 +139,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 History
 ----
+0.96.2: Merge pull request #6, #7: Optimize Danmaku2ASS parameters and exception handling, thanks to @m13253's help; Fix error when cookie does not exist, thanks to @m13253's report.
+
 0.96.1: Add exception handling regarding to Danmaku2ass2; Fix vid guessing.
 
 0.96: Add danmaku2ass(py2) to handle ass convertion without Python 3; Add the danmaku2ass dependencies check mode for safety; Add "danmaku only" mode to depreciate BiligrabLite; Change the default live time to 8 sec as the update from upstream; Update the license info.

@@ -4,7 +4,7 @@
 # Purpose: Yet another danmaku and video file downloader of Bilibili. 
 # Created: 11/06/2013
 '''
-Biligrab 0.96.1
+Biligrab 0.96.2
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
@@ -37,7 +37,7 @@ cookies,VIDEO_FORMAT = '', ''
 LOG_LEVEL = 0
 APPKEY='85eb6835b0a1034e';
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = '0.96.1'
+VER = '0.96.2'
 FAKE_HEADER = {'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
 LOCATION_DIR = os.getcwd()
 
@@ -57,7 +57,7 @@ def calc_sign(string):
 
 #----------------------------------------------------------------------
 def read_cookie(cookiepath):
-    """str->str/None
+    """str->list
     Original target: set the cookie
     Target now: Set the global header"""
     global BILIGRAB_HEADER
@@ -69,7 +69,7 @@ def read_cookie(cookiepath):
         return cookies
     except:
         print('WARNING: Cannot read cookie, may affect some videos...')
-        return ''
+        return ['']
 
 #----------------------------------------------------------------------
 def clean_name(name):
