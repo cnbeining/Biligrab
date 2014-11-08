@@ -220,4 +220,5 @@ for p in p_list:
     sys.setdefaultencoding('utf-8')
     part_now = str(p)
     main(vid, p, oversea)
+    print('!!!!!!!!!!!!!!!\nWARNING: BiligrabLite may be depreciated later for the function has ben fulfilled by Biligrab\'s \'-m\' function.\n If you encounter any problem, please use Biligrab instead.\nError repprting or suggestions: https://github.com/cnbeining/Biligrab/issues!!!!!!!!!!!!!!!\n')
 exit()

@@ -4,7 +4,7 @@
 # Purpose: Yet another danmaku and video file downloader of Bilibili. 
 # Created: 11/06/2013
 '''
-Biligrab 0.95
+Biligrab 0.96
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
@@ -22,7 +22,7 @@ import sys
 import commands
 import hashlib
 import getopt
-
+from danmaku2ass2 import * 
 
 from xml.dom.minidom import parse, parseString
 import xml.dom.minidom
@@ -30,13 +30,13 @@ import xml.dom.minidom
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-global vid, cid, partname, title, videourl, part_now, is_first_run, APPKEY, SECRETKEY, LOG_LEVEL, VER, LOCATION_DIR, VIDEO_FORMAT
+global vid, cid, partname, title, videourl, part_now, is_first_run, APPKEY, SECRETKEY, LOG_LEVEL, VER, LOCATION_DIR, VIDEO_FORMAT, convert_ass, is_export
 
 cookies,VIDEO_FORMAT = '', ''
 LOG_LEVEL = 0
 APPKEY='85eb6835b0a1034e';
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = 0.95
+VER = 0.96
 FAKE_HEADER = {'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
 LOCATION_DIR = os.getcwd()
 
@@ -273,39 +273,34 @@ def find_video_address_api(cid, header, method):
     data = response.read()
     return data
 
-
-#----------------------------------------------------------------------
-def convert_ass(xml_name, filename, resolution):
-    """A simple way to do that."""
-    xml_abspath = os.path.abspath(xml_name)
-    ass_name = filename + '.ass'
-    os.system('python3 ' + LOCATION_DIR + '/danmaku2ass.py -o '  + ass_name + ' -s ' + resolution + ' -fs 48   -a 0.8 -l 5 '+ xml_abspath)
-    print('INFO: Converted to ASS!')
-
 #----------------------------------------------------------------------
 def get_resolution(filename, probe_software):
-    """str,str-.str"""
-    resolution = ''
+    """str,str->list"""
+    resolution = []
     filename = filename + '.' + VIDEO_FORMAT
-    if probe_software == 'mediainfo':
-        resolution = get_resolution_mediainfo(filename)
-    if probe_software == 'ffprobe':
-        resolution = get_resolution_ffprobe(filename)
-    if LOG_LEVEL == 1:
-        print('DEBUG: Software: ' + probe_software + ', resolution' + resolution)
-    return resolution
+    try:
+        if probe_software == 'mediainfo':
+            resolution = get_resolution_mediainfo(filename)
+        if probe_software == 'ffprobe':
+            resolution = get_resolution_ffprobe(filename)
+        if LOG_LEVEL == 1:
+            print('DEBUG: Software: ' + probe_software + ', resolution ' + resolution)
+        return resolution
+    except:
+        return[1280, 720]
 
 #----------------------------------------------------------------------
 def get_resolution_mediainfo(filename):
-    """str->str
-    1920x1080
+    """str->list
+    [640,360]
     path to dimention"""
-    return str(os.popen('mediainfo \'--Inform=Video;%Width%x%Height%\' \'' + filename + '\'').read()).strip()
+    resolution = str(os.popen('mediainfo \'--Inform=Video;%Width%x%Height%\' \'' + filename + '\'').read()).strip().split('x')
+    return [int(resolution[0]), int(resolution[1])]
 
 #----------------------------------------------------------------------
 def get_resolution_ffprobe(filename):
-    '''str->str
-    1920x1080'''
+    '''str->list
+    [640,360]'''
     width = ''
     height = ''
     cmnd = ['ffprobe', '-show_format', '-show_streams' ,'-pretty', '-loglevel', 'quiet', filename]
@@ -323,10 +318,72 @@ def get_resolution_ffprobe(filename):
                 height = line.split('=')[1]
     except:
         return None
-    return width + 'x' + height
+    #return width + 'x' + height
+    return [int(width), int(height)]
 
 #----------------------------------------------------------------------
-def main(vid, p, oversea, cookies, download_software, concat_software, is_export, probe_software):
+def convert_ass_py3(filename, probe_software):
+    """str,str->None
+    With danmaku2ass, branch master.
+    https://github.com/m13253/danmaku2ass/
+    Author: @m13253
+    GPLv3
+    A simple way to do that.
+    resolution_str:1920x1080"""
+    print('INFO: Converting danmaku to ASS file with danmaku2ass(main)...')
+    xml_name = filename + '.xml'
+    xml_abspath = os.path.abspath(xml_name)
+    ass_name = filename + '.ass'
+    print('INFO: Trying to get resolution...')
+    resolution = get_resolution(filename, probe_software)
+    resolution_str = str(resolution[0]) + 'x' + str(resolution[1])
+    print('INFO: Resoution is ' + str(resolution_str))
+    os.system('python3 ' + LOCATION_DIR + '/danmaku2ass3.py -o '  + ass_name + ' -s ' + resolution_str + ' -fs 48   -a 0.8 -l 8 '+ xml_abspath)
+    print('INFO: Converted to ASS!')
+
+#----------------------------------------------------------------------
+def convert_ass_py2(filename, probe_software):
+    """str,str->None
+    With danmaku2ass, branch py2.
+    https://github.com/m13253/danmaku2ass/tree/py2
+    Author: @m13253
+    GPLv3"""
+    print('INFO: Converting danmaku to ASS file with danmaku2ass(py2)...')
+    xml_name = filename + '.xml'
+    print('INFO: Trying to get resolution...')
+    resolution = get_resolution(filename, probe_software)
+    print('INFO: Resoution is ' + str(resolution))
+    #convert_ass(xml_name, filename + '.ass', resolution)
+    Danmaku2ASS(xml_name, filename + '.ass', resolution[0], resolution[1], 
+               font_face=_('(FONT) sans-serif')[7], font_size= 48.0, text_opacity= 0.8, comment_duration= 8.0, is_reduce_comments=False, progress_callback=None)
+    print('INFO: The ASS file should be ready!')
+
+
+#----------------------------------------------------------------------
+def download_danmaku(cid, filename, is_export, probe_software):
+    """str,str,int->None
+    Download XML file, and convert to ASS(if required)
+    Used to be in main(), but replaced due to the merge of -m (BiligrabLite).
+    If danmaku only, will see whether need to export ASS."""
+    print('INFO: Fetching XML...')
+    os.system('curl -o "'+filename+'.xml" --compressed  http://comment.bilibili.com/'+cid+'.xml')
+    #os.system('gzip -d '+cid+'.xml.gz')
+    print('INFO: The XML file, ' + filename + '.xml should be ready...enjoy!')
+
+
+########################################################################
+class DanmakuOnlyException(Exception):
+    '''Deal with DanmakuOnly to stop the main() function.'''
+    #----------------------------------------------------------------------
+    def __init__(self, value):
+        self.value = value
+    #----------------------------------------------------------------------
+    def __str__(self):
+        return repr(self.value)
+    ########################################################################
+
+#----------------------------------------------------------------------
+def main(vid, p, oversea, cookies, download_software, concat_software, is_export, probe_software, danmaku_only):
     global cid, partname, title, videourl, is_first_run
     videourl = 'http://www.bilibili.com/video/av'+ str(vid)+'/index_'+ str(p)+'.html'
     # Check both software
@@ -369,10 +426,13 @@ def main(vid, p, oversea, cookies, download_software, concat_software, is_export
         is_first_run = 1
         os.chdir(folder_to_make)
     # Download Danmaku
-    print('INFO: Fetching XML...')
-    os.system('curl -o "'+filename+'.xml" --compressed  http://comment.bilibili.com/'+cid+'.xml')
-    os.system('gzip -d '+cid+'.xml.gz')
-    print('INFO: The XML file, ' + filename + '.xml should be ready...enjoy!')
+    download_danmaku(cid, filename, is_export, probe_software)
+    if is_export >= 1 and danmaku_only == 1:
+        #if requested to stop
+        convert_ass(filename, probe_software)
+    if danmaku_only == 1:
+        raise DanmakuOnlyException('INFO: Danmaku only')
+    #Find video location
     print('INFO: Finding video location...')
     #try api
     data = find_video_address_api(cid, BILIGRAB_HEADER, oversea)
@@ -429,16 +489,9 @@ def main(vid, p, oversea, cookies, download_software, concat_software, is_export
         #Call a function to support multiple download softwares
         download_video(part_number, download_software, video_link)
     concat_videos(concat_software, vid_num, filename)
-    if is_export == 1:
-        print('INFO: Converting danmaku to ASS file...')
-        xml_name = filename + '.xml'
-        print('INFO: Trying to get resolution...')
-        resolution = get_resolution(filename, probe_software)
-        print(resolution)
-        convert_ass(xml_name, filename, resolution)
+    if is_export >= 1:
+        convert_ass(filename, probe_software)
     print('INFO: Part Done!')
-
-
 
 
 #----------------------------------------------------------------------
@@ -488,7 +541,42 @@ def get_full_p(p_raw):
     p_list = list_del_repeat(p_list)
     return p_list
 
-
+#----------------------------------------------------------------------
+def check_dependencies_danmaku2ass(is_export):
+    """int,str->int,str"""
+    if is_export == 3:
+        convert_ass = convert_ass_py3
+        output = commands.getstatusoutput('python3 --help')
+        if str(output[0]) == '32512' or not os.path.exists('danmaku2ass3.py'):
+            err_input = str(raw_input('ERROR: danmaku2ass3.py DNE, python3 does not exist or not callable! Do you want to exit, use Python 2.x or stop the converting?(e/2/s)'))
+            if err_input == 'e':
+                exit()
+            elif err_input == '2':
+                convert_ass = convert_ass_py2
+                is_export = 2
+            elif err_input == 's':
+                is_export = 0
+            else:
+                print('WARNING: Cannot read input, stop the converting!')
+                is_export = 0
+    elif is_export == 2 or is_export == 1:
+        convert_ass = convert_ass_py2
+        if not os.path.exists('danmaku2ass2.py'):
+            err_input = str(raw_input('ERROR: danmaku2ass2.py DNE! Do you want to exit, use Python 3.x or stop the converting?(e/3/s)'))
+            if err_input == 'e':
+                exit()
+            elif err_input == '3':
+                convert_ass = convert_ass_py3
+                is_export = 3
+            elif err_input == 's':
+                is_export = 0
+            else:
+                print('WARNING: Cannot read input, stop the converting!')
+                is_export = 0
+    else:
+        convert_ass = convert_ass_py2
+    return is_export, convert_ass
+    
 #----------------------------------------------------------------------
 def usage():
     """"""
@@ -504,7 +592,7 @@ def usage():
     
     Usage:
     
-    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p)
+    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p) (-m)
     
     -h: Default: None
         Print this usage file.
@@ -563,10 +651,14 @@ def usage():
     
     -e: Default: 0
     Export Danmaku to ASS file.
-    Fulfilled with danmaku2ass(https://github.com/m13253/danmaku2ass),
-    Author: @m13253, GPLv2 License.
-    !!!!!!!!WARNING!!!!!!!!
-    This function requires Python3, and callable via 'python3' !
+    Fulfilled with danmaku2ass(https://github.com/m13253/danmaku2ass/tree/py2),
+    Author: @m13253, GPLv3 License.
+    *For issue with this function, if you think the problem lies on the danmaku2ass side,
+    please open the issue at both projects.*
+    If set to 1 or 2, Biligrab will use Danmaku2ass's py2 branch.
+    If set to 3, Biligrab will use Danmaku2ass's master branch, which would require
+    a python3 callable via 'python3'.
+    If python3 not callable or danmaku2ass2/3 DNE, Biligrab will ask for action.
     
     -p: Default: None
     Set the probe software.
@@ -575,17 +667,21 @@ def usage():
     If none of those is avalable, Biligrab will quit.
     For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
     Make sure you include a *working* command line example of this software!
+    
+    -m: Default: 0
+    Only download the danmaku.
     ''')
 
 
 #----------------------------------------------------------------------
 if __name__=='__main__':
-    is_first_run, is_export = 0, 0
+    is_first_run, is_export, danmaku_only = 0, 0, 0
     argv_list = []
     argv_list = sys.argv[1:]
     p_raw, vid, oversea, cookiepath, download_software, concat_software, probe_software = '', '', '', '', '', '', ''
+    convert_ass = convert_ass_py2
     try:
-        opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:l:e:b:", ['help', "av",'part', 'source', 'cookie', 'download', 'concat', 'log', 'export', 'probe'])
+        opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:l:e:b:m:", ['help', "av",'part', 'source', 'cookie', 'download', 'concat', 'log', 'export', 'probe', 'danmaku'])
     except getopt.GetoptError:
         usage()
         exit()
@@ -652,6 +748,12 @@ if __name__=='__main__':
                 argv_list.remove('-b')
             except:
                 break
+        if o in ('-m', '--danmaku'):
+            danmaku_only = int(a)
+            try:
+                argv_list.remove('-m')
+            except:
+                break
     if len(vid) == 0:
         vid = str(raw_input('av'))
         p_raw = str(raw_input('P'))
@@ -676,8 +778,10 @@ if __name__=='__main__':
     p_list = get_full_p(p_raw)
     cookies = read_cookie(cookiepath)
     global BILIGRAB_HEADER
-    if is_export == 1:
-        print('INFO: EXPORT!!!!!!!!!')
+    #deal with danmaku2ass's drama
+    #Twice in case someone failed to check dependencies
+    is_export, convert_ass = check_dependencies_danmaku2ass(is_export)
+    is_export, convert_ass = check_dependencies_danmaku2ass(is_export)
     BILIGRAB_HEADER = {'User-Agent' : 'Biligrab / ' + str(VER) + ' (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' , 'Cookie': cookies[0]}
     if LOG_LEVEL == 1:
         print('!!!!!!!!!!!!!!!!!!!!!!!\nWARNING: This log contains some sensive data. You may want to delete some part of the data before you post it publicly!\n!!!!!!!!!!!!!!!!!!!!!!!')
@@ -697,7 +801,10 @@ if __name__=='__main__':
         reload(sys)
         sys.setdefaultencoding('utf-8')
         part_now = str(p)
-        main(vid, p, oversea, cookies, download_software, concat_software, is_export, probe_software)
+        try:
+            main(vid, p, oversea, cookies, download_software, concat_software, is_export, probe_software, danmaku_only)
+        except DanmakuOnlyException:
+            pass
     exit()
 
 

@@ -5,13 +5,15 @@ Yet another danmaku and video file downloader of Bilibili.
 
 Integrated with most of the "black science".
 
-4 independent ways to parse true source(s).
+4 independent ways to parse source(s).
 
 Auto concat and convert to MP4 file(s), direct integrate with Mukioplayer-Py-Mac(https://github.com/cnbeining/Mukioplayer-Py-Mac  , the Flash danmaku playing solution) and ABPlayer-HTML5-Mac(https://github.com/cnbeining/ABPlayerHTML5-Py--nix  , the HTML5 playing solution, preferred). 
 
-Interact and non-interact mode for different situations.
+Interact and command line mode for different situations.
 
-Intergrated with Danmaku2ass(https://github.com/m13253/danmaku2ass, GPL v2) by m13253, able to convert danmaku to ASS subtitle.
+Intergrated with Danmaku2ass(https://github.com/m13253/danmaku2ass, GPL v2) by m13253, able to convert danmaku to ASS subtitle. Both py2 and master branch avalable for better handling danmaku.
+
+Able to export danmaku only.
 
 Usage
 ------
@@ -24,7 +26,7 @@ python biligrab.py
 Or non-interact mode:
 
 
-    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p)
+    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p) (-m)
     
     -h: Default: None
         Print this usage file.
@@ -83,10 +85,14 @@ Or non-interact mode:
     
     -e: Default: 0
     Export Danmaku to ASS file.
-    Fulfilled with danmaku2ass(https://github.com/m13253/danmaku2ass),
-    Author: @m13253, GPLv2 License.
-    !!!!!!!!WARNING!!!!!!!!
-    This function requires Python3, and callable via 'python3' !
+    Fulfilled with danmaku2ass(https://github.com/m13253/danmaku2ass/tree/py2),
+    Author: @m13253, GPLv3 License.
+    *For issue with this function, if you think the problem lies on the danmaku2ass side,
+    please open the issue at both projects.*
+    If set to 1 or 2, Biligrab will use Danmaku2ass's py2 branch.
+    If set to 3, Biligrab will use Danmaku2ass's master branch, which would require
+    a python3 callable via 'python3'.
+    If python3 not callable or danmaku2ass2/3 DNE, Biligrab will ask for action.
     
     -p: Default: None
     Set the probe software.
@@ -95,13 +101,17 @@ Or non-interact mode:
     If none of those is avalable, Biligrab will quit.
     For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
     Make sure you include a *working* command line example of this software!
+    
+    -m: Default: 0
+    Only download the danmaku.
 
 Requirement
 -------
 - Python 2.7
 - curl + None/aria2c/wget/axel
 - ffmpeg
-- Python 3.x(for danmaku2ass)
+- mediainfo/ffprobe(for danmaku2ass)
+- Python 3.x(only for danmaku2ass's python3 mode)
 
 Author
 -----
@@ -111,10 +121,26 @@ License
 -----
 MIT license.
 
-The Danmaku2ass part belongs to @m13253, GPLv2 license.
+The Danmaku2ass(master) and Danmaku2ass(py2) part belongs to @m13253, GPLv3 license. Used under the authorization of the original author.
+
+This program is provided **as is**, with absolutely no warranty.
+
+Contributing
+------------
+Any contribution is welcome. 
+
+For issues, it would be better to include the log output, which can be enabled by ```-l```. 
+
+MAKE SURE YOU DELETE ANY SENSIVE INFORMATION THAT YOU DO NOT WANT TO SHARE PUBLICLY(E.G., IP ADDRESS, USERNAME, ETC.) BEFORE YOU POST ANYTHING!
+
+*You can still send me the info privately via my email. PGP public key avalable at http://www.cnbeining.com/about/*
+
+Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail.com .
 
 History
 ----
+0.96: Add danmaku2ass(py2) to handle ass convertion without Python 3; Add the danmaku2ass dependencies check mode for safety; Add "danmaku only" mode to depreciate BiligrabLite; Change the default live time to 8 sec as the update from upstream; Update the license info.
+
 0.95: Add danmaku2ass, able to convert danmaku to ass file; Fix axel error.
 
 0.94: Add faking UA to bypass blocking; Add auto-generate UA; Rewrite API logic.
