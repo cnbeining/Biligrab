@@ -19,6 +19,7 @@ import gzip
 import urllib
 import urllib2
 import sys
+import math
 import commands
 import hashlib
 import getopt
@@ -356,10 +357,11 @@ def convert_ass_py2(filename, probe_software):
     #convert_ass(xml_name, filename + '.ass', resolution)
     try:
         Danmaku2ASS(xml_name, filename + '.ass', resolution[0], resolution[1], 
-               font_face=_('(FONT) sans-serif')[7], font_size= 48.0, text_opacity= 0.8, comment_duration= 8.0, is_reduce_comments=False, progress_callback=None)
+                font_size= math.ceil(resolution[1]/21.6), text_opacity= 0.8, comment_duration= 8.0)
         print('INFO: The ASS file should be ready!')
-    except:
-        print('ERROR: Expection with Danmaku2ASS!')
+    except Exception as e:
+        print('ERROR: Danmaku2ASS failed: %s' % e)
+        print('       Head to https://github.com/m13253/danmaku2ass/issues to complain about this.')
 
 
 #----------------------------------------------------------------------
