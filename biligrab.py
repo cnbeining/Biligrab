@@ -4,7 +4,7 @@
 # Purpose: Yet another danmaku and video file downloader of Bilibili. 
 # Created: 11/06/2013
 '''
-Biligrab 0.96
+Biligrab 0.96.1
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
@@ -36,7 +36,7 @@ cookies,VIDEO_FORMAT = '', ''
 LOG_LEVEL = 0
 APPKEY='85eb6835b0a1034e';
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = 0.96
+VER = '0.96.1'
 FAKE_HEADER = {'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
 LOCATION_DIR = os.getcwd()
 
@@ -354,9 +354,12 @@ def convert_ass_py2(filename, probe_software):
     resolution = get_resolution(filename, probe_software)
     print('INFO: Resoution is ' + str(resolution))
     #convert_ass(xml_name, filename + '.ass', resolution)
-    Danmaku2ASS(xml_name, filename + '.ass', resolution[0], resolution[1], 
+    try:
+        Danmaku2ASS(xml_name, filename + '.ass', resolution[0], resolution[1], 
                font_face=_('(FONT) sans-serif')[7], font_size= 48.0, text_opacity= 0.8, comment_duration= 8.0, is_reduce_comments=False, progress_callback=None)
-    print('INFO: The ASS file should be ready!')
+        print('INFO: The ASS file should be ready!')
+    except:
+        print('ERROR: Expection with Danmaku2ASS!')
 
 
 #----------------------------------------------------------------------
@@ -382,6 +385,16 @@ class DanmakuOnlyException(Exception):
         return repr(self.value)
     ########################################################################
 
+########################################################################
+class Danmaku2Ass2Exception(Exception):
+    '''Deal with Danmaku2ASS2 to stop the main() function.'''
+    #----------------------------------------------------------------------
+    def __init__(self, value):
+        self.value = value
+    #----------------------------------------------------------------------
+    def __str__(self):
+        return repr(self.value)
+    ########################################################################
 #----------------------------------------------------------------------
 def main(vid, p, oversea, cookies, download_software, concat_software, is_export, probe_software, danmaku_only):
     global cid, partname, title, videourl, is_first_run
@@ -398,9 +411,9 @@ def main(vid, p, oversea, cookies, download_software, concat_software, is_export
     if cid is 0:
         is_black3 = str(raw_input('WARNING: Strange, still cannot find cid... \nType y for trying the unpredictable way, or input the cid by yourself; Press ENTER to quit.'))
         if 'y' in str(is_black3):
-            vid = vid - 1
+            vid = str(int(vid) - 1)
             p = 1
-            find_cid_api(vid-1, p)
+            find_cid_api(int(vid)-1, p)
             cid = cid + 1
         elif str(is_black3) is '':
             print('FATAL: Cannot get cid anyway! Quit.')
@@ -490,7 +503,11 @@ def main(vid, p, oversea, cookies, download_software, concat_software, is_export
         download_video(part_number, download_software, video_link)
     concat_videos(concat_software, vid_num, filename)
     if is_export >= 1:
-        convert_ass(filename, probe_software)
+        try:
+            convert_ass(filename, probe_software)
+        except:
+            print('WARNING: Problem with ASS convertion!')
+            pass
     print('INFO: Part Done!')
 
 

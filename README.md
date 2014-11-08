@@ -139,6 +139,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 History
 ----
+0.96.1: Add exception handling regarding to Danmaku2ass2; Fix vid guessing.
+
 0.96: Add danmaku2ass(py2) to handle ass convertion without Python 3; Add the danmaku2ass dependencies check mode for safety; Add "danmaku only" mode to depreciate BiligrabLite; Change the default live time to 8 sec as the update from upstream; Update the license info.
 
 0.95: Add danmaku2ass, able to convert danmaku to ass file; Fix axel error.
