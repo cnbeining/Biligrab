@@ -332,10 +332,12 @@ def convert_ass_py3(filename, probe_software):
     A simple way to do that.
     resolution_str:1920x1080"""
     print('INFO: Converting danmaku to ASS file with danmaku2ass(main)...')
+    xml_name = os.path.abspath(xml_name + '.xml')
+    ass_name = filename + '.ass'
     print('INFO: Trying to get resolution...')
     resolution = get_resolution(filename, probe_software)
     print('INFO: Resolution is %dx%d' % (resolution[0], resolution[1]))
-    if os.system('python3 %s/danmaku2ass3.py -o %s.ass -s %dx%d -fs %d -a 0.8 -l 8 %s.xml' % (LOCATION_DIR, filename, resolution[0], resolution[1], int(math.ceil(resolution[1]/21.6)), filename)) == 0:
+    if os.system('python3 %s/danmaku2ass3.py -o %s -s %dx%d -fs %d -a 0.8 -l 8 %s' % (LOCATION_DIR, ass_name, resolution[0], resolution[1], int(math.ceil(resolution[1]/21.6)), xml_name)) == 0:
         print('INFO: The ASS file should be ready!')
     else:
         print('ERROR: Danmaku2ASS failed.')
