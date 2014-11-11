@@ -4,7 +4,7 @@
 # Purpose: Yet another danmaku and video file downloader of Bilibili. 
 # Created: 11/06/2013
 '''
-Biligrab 0.96.2
+Biligrab 0.97
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
@@ -31,13 +31,13 @@ import xml.dom.minidom
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-global vid, cid, partname, title, videourl, part_now, is_first_run, APPKEY, SECRETKEY, LOG_LEVEL, VER, LOCATION_DIR, VIDEO_FORMAT, convert_ass, is_export
+global vid, cid, partname, title, videourl, part_now, is_first_run, APPKEY, SECRETKEY, LOG_LEVEL, VER, LOCATION_DIR, VIDEO_FORMAT, convert_ass, is_export, IS_SLIENT
 
 cookies,VIDEO_FORMAT = '', ''
 LOG_LEVEL = 0
 APPKEY='85eb6835b0a1034e';
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = '0.96.2'
+VER = '0.97'
 FAKE_HEADER = {'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
 LOCATION_DIR = os.getcwd()
 
@@ -287,7 +287,7 @@ def get_resolution(filename, probe_software):
         if LOG_LEVEL == 1:
             print('DEBUG: Software: ' + probe_software + ', resolution ' + resolution)
         return resolution
-    except:
+    except:  #magic number
         return[1280, 720]
 
 #----------------------------------------------------------------------
@@ -366,7 +366,7 @@ def convert_ass_py2(filename, probe_software):
 
 
 #----------------------------------------------------------------------
-def download_danmaku(cid, filename, is_export, probe_software):
+def download_danmaku(cid, filename):
     """str,str,int->None
     Download XML file, and convert to ASS(if required)
     Used to be in main(), but replaced due to the merge of -m (BiligrabLite).
@@ -398,12 +398,33 @@ class Danmaku2Ass2Exception(Exception):
     def __str__(self):
         return repr(self.value)
     ########################################################################
+
+########################################################################
+class NoCidException(Exception):
+    '''Deal with no cid to stop the main() function.'''
+    #----------------------------------------------------------------------
+    def __init__(self, value):
+        self.value = value
+    #----------------------------------------------------------------------
+    def __str__(self):
+        return repr(self.value)
+    ########################################################################
+
+########################################################################
+class NoVideoURLException(Exception):
+    '''Deal with no video URL to stop the main() function.'''
+    #----------------------------------------------------------------------
+    def __init__(self, value):
+        self.value = value
+    #----------------------------------------------------------------------
+    def __str__(self):
+        return repr(self.value)
+    ########################################################################
 #----------------------------------------------------------------------
 def main(vid, p, oversea, cookies, download_software, concat_software, is_export, probe_software, danmaku_only):
     global cid, partname, title, videourl, is_first_run
     videourl = 'http://www.bilibili.com/video/av'+ str(vid)+'/index_'+ str(p)+'.html'
     # Check both software
-    concat_software, download_software, probe_software = check_dependencies(download_software, concat_software, probe_software)
     print(concat_software, download_software)
     #Start to find cid, api-flvcd
     find_cid_api(vid, p, cookies)
@@ -412,15 +433,17 @@ def main(vid, p, oversea, cookies, download_software, concat_software, is_export
         print('WARNING: Cannot find cid, trying to do it brutely...')
         find_cid_flvcd(videourl)
     if cid is 0:
-        is_black3 = str(raw_input('WARNING: Strange, still cannot find cid... \nType y for trying the unpredictable way, or input the cid by yourself; Press ENTER to quit.'))
+        if IS_SLIENT == 0:
+            is_black3 = str(raw_input('WARNING: Strange, still cannot find cid... \nType y for trying the unpredictable way, or input the cid by yourself; Press ENTER to quit.'))
+        else:
+            is_black3 = 'y'
         if 'y' in str(is_black3):
             vid = str(int(vid) - 1)
             p = 1
             find_cid_api(int(vid)-1, p)
             cid = cid + 1
         elif str(is_black3) is '':
-            print('FATAL: Cannot get cid anyway! Quit.')
-            exit()
+            raise NoCidException('FATAL: Cannot get cid anyway!')
         else:
             cid = str(is_black3)
     #start to make folders...
@@ -442,7 +465,7 @@ def main(vid, p, oversea, cookies, download_software, concat_software, is_export
         is_first_run = 1
         os.chdir(folder_to_make)
     # Download Danmaku
-    download_danmaku(cid, filename, is_export, probe_software)
+    download_danmaku(cid, filename)
     if is_export >= 1 and danmaku_only == 1:
         #if requested to stop
         convert_ass(filename, probe_software)
@@ -495,8 +518,7 @@ def main(vid, p, oversea, cookies, download_software, concat_software, is_export
         rawurl = list(str(raw_input('ERROR: Cannot get download URL! If you know the url, please enter it now; URL1|URL2...'))).split('|')
     vid_num = len(rawurl)
     if vid_num is 0:  # shit really hit the fan
-        print('FATAL: Cannot get video URL anyway!')
-        exit()
+        raise NoVIdeoURLException('FATAL: Cannot get video URL anyway!')
     print('INFO: ' + str(vid_num) + ' videos in part ' + str(part_now) + ' to download, fetch yourself a cup of coffee...')
     for i in range(vid_num):
         video_link = rawurl[i]
@@ -612,7 +634,7 @@ def usage():
     
     Usage:
     
-    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p) (-m)
+    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p) (-m) (-n)
     
     -h: Default: None
         Print this usage file.
@@ -620,9 +642,6 @@ def usage():
     -a: Default: None
         The av number.
         If not set, Biligrab will use the falloff interact mode.
-        
-    -p: Default: 1
-        The part number.
         Support "~", "," and mix use.
         Examples:
             Input        Output
@@ -630,6 +649,10 @@ def usage():
              1,2         [1, 2]
              1~3        [1, 2, 3]
             1,2~3       [1, 2, 3]
+        
+    -p: Default: 1
+        The part number.
+        Able to use the same syntax as "-a".
                  
     -s: Default: 0
     Source to download.
@@ -690,18 +713,22 @@ def usage():
     
     -m: Default: 0
     Only download the danmaku.
+    
+    -n: Default: 0
+    Slient Mode.
+    Biligrab will not ask any question.
     ''')
 
 
 #----------------------------------------------------------------------
 if __name__=='__main__':
-    is_first_run, is_export, danmaku_only = 0, 0, 0
+    is_first_run, is_export, danmaku_only,IS_SLIENT = 0, 0, 0, 0
     argv_list = []
     argv_list = sys.argv[1:]
     p_raw, vid, oversea, cookiepath, download_software, concat_software, probe_software = '', '', '', '', '', '', ''
     convert_ass = convert_ass_py2
     try:
-        opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:l:e:b:m:", ['help', "av",'part', 'source', 'cookie', 'download', 'concat', 'log', 'export', 'probe', 'danmaku'])
+        opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:l:e:b:m:n:", ['help', "av",'part', 'source', 'cookie', 'download', 'concat', 'log', 'export', 'probe', 'danmaku', 'slient'])
     except getopt.GetoptError:
         usage()
         exit()
@@ -710,7 +737,7 @@ if __name__=='__main__':
             usage()
             exit()
         if o in ('-a', '--av'):
-            vid = a
+            vid_raw = a
             try:
                 argv_list.remove('-a')
             except:
@@ -774,8 +801,14 @@ if __name__=='__main__':
                 argv_list.remove('-m')
             except:
                 break
-    if len(vid) == 0:
-        vid = str(raw_input('av'))
+        if o in ('-n', '--slient'):
+            IS_SLIENT = int(a)
+            try:
+                argv_list.remove('-n')
+            except:
+                break
+    if len(vid_raw) == 0:
+        vid_raw = str(raw_input('av'))
         p_raw = str(raw_input('P'))
         oversea = str(raw_input('Source?'))
         cookiepath = './bilicookies'
@@ -794,8 +827,21 @@ if __name__=='__main__':
     if len(oversea) == 0:
         oversea = '0'
         print('INFO: Oversea not set, use original API(methon 0).')
-    print('INFO: Your targe download is av' + vid + ', part ' + p_raw + ', from source ' + oversea)
+    concat_software, download_software, probe_software = check_dependencies(download_software, concat_software, probe_software)
     p_list = get_full_p(p_raw)
+    av_list = get_full_p(vid_raw)
+    if len(av_list) > 1 and len(p_list) > 1:
+        print('WARNING: You are downloading multi parts from multiple videos! This may result in unpredicable outputs!')
+        if IS_SLIENT == 0:
+            input_raw = str(raw_input('Enter "y" to continue, "n" to only download the first part, "q" to quit, or enter the part number you want.'))
+            if input_raw == 'y':
+                pass
+            elif input_raw == 'n':
+                p_list = ['1']
+            elif input_raw == 'q':
+                exit()
+            else:
+                p_list = get_full_p(input_raw)
     cookies = read_cookie(cookiepath)
     global BILIGRAB_HEADER
     #deal with danmaku2ass's drama
@@ -815,16 +861,25 @@ if __name__=='__main__':
             print('=======================DUMP DATA==================')
             print(data)
             print('========================DATA END==================')
+            print('DEBUG: ' + str(av_list))
         except:
             print('WARNING: Cannot connect to IP-geo database server!')
-    for p in p_list:
-        reload(sys)
-        sys.setdefaultencoding('utf-8')
-        part_now = str(p)
-        try:
-            main(vid, p, oversea, cookies, download_software, concat_software, is_export, probe_software, danmaku_only)
-        except DanmakuOnlyException:
             pass
+    for av in av_list:
+        vid = str(av)
+        for p in p_list:
+            reload(sys)
+            sys.setdefaultencoding('utf-8')
+            part_now = str(p)
+            try:
+                print('INFO: Your targe download is av' + vid + ', part ' + p_raw + ', from source ' + oversea)
+                main(vid, p, oversea, cookies, download_software, concat_software, is_export, probe_software, danmaku_only)
+            except DanmakuOnlyException:
+                pass
+            except Exception as e:
+                print('ERROR: Biligrab failed: %s' % e)
+                print('       If you think this should not happen, please dump your log using "-l", and open a issue ar https://github.com/cnbeining/Biligrab/issues .')
+                print('       Make sure you delete all the sensive data before you post it publicly.')
     exit()
 
 

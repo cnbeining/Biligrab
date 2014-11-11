@@ -34,9 +34,6 @@ Or non-interact mode:
     -a: Default: None
         The av number.
         If not set, Biligrab will use the falloff interact mode.
-        
-    -p: Default: 1
-        The part number.
         Support "~", "," and mix use.
         Examples:
             Input        Output
@@ -44,6 +41,10 @@ Or non-interact mode:
              1,2         [1, 2]
              1~3        [1, 2, 3]
             1,2~3       [1, 2, 3]
+        
+    -p: Default: 1
+        The part number.
+        Able to use the same syntax as "-a".
                  
     -s: Default: 0
     Source to download.
@@ -104,6 +105,10 @@ Or non-interact mode:
     
     -m: Default: 0
     Only download the danmaku.
+    
+    -n: Default: 0
+    Slient Mode.
+    Biligrab will not ask any question.
 
 Requirement
 -------
