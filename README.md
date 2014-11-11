@@ -7,9 +7,9 @@ Integrated with most of the "black science".
 
 4 independent ways to parse source(s).
 
-Auto concat and convert to MP4 file(s), direct integrate with Mukioplayer-Py-Mac(https://github.com/cnbeining/Mukioplayer-Py-Mac  , the Flash danmaku playing solution) and ABPlayer-HTML5-Mac(https://github.com/cnbeining/ABPlayerHTML5-Py--nix  , the HTML5 playing solution, preferred). 
+Auto concat and convert to MP4 (or FLV, even nothing, if not possible) file(s), direct integrate with Mukioplayer-Py-Mac(https://github.com/cnbeining/Mukioplayer-Py-Mac  , the Flash danmaku playing solution) and ABPlayer-HTML5-Mac(https://github.com/cnbeining/ABPlayerHTML5-Py--nix  , the HTML5 playing solution, preferred). 
 
-Interact and command line mode for different situations.
+Interact and command line mode for different situations. ALso support slient mode.
 
 Intergrated with Danmaku2ass(https://github.com/m13253/danmaku2ass, GPL v2) by m13253, able to convert danmaku to ASS subtitle. Both py2 and master branch avalable for better handling danmaku.
 
@@ -17,7 +17,11 @@ Able to export danmaku only.
 
 Usage
 ------
-If you have a Bilibili account, set the cookie with https://github.com/dantmnf/biliupload/blob/master/getcookie.py  will help you to download some of the restricted videos.
+If you have a Bilibili account, set the cookie with https://github.com/dantmnf/biliupload/blob/master/getcookie.py  will help you to download some of the restricted videos. Also you can do that by hand.
+
+The file should looks like:
+
+    DedeUserID=123456;DedeUserID__ckMd5=****************;SESSDATA=*******************
 
 Interactive mode:
 
@@ -144,6 +148,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 History
 ----
+0.97: Slient mode; Multiple video mode; Functions beautify; More error handling.
+
 0.96.2: Merge pull request #6, #7: Optimize Danmaku2ASS parameters and exception handling, thanks to @m13253's help; Fix error when cookie does not exist, thanks to @m13253's report.
 
 0.96.1: Add exception handling regarding to Danmaku2ass2; Fix vid guessing.
