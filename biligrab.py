@@ -725,7 +725,7 @@ if __name__=='__main__':
     is_first_run, is_export, danmaku_only,IS_SLIENT = 0, 0, 0, 0
     argv_list = []
     argv_list = sys.argv[1:]
-    p_raw, vid, oversea, cookiepath, download_software, concat_software, probe_software = '', '', '', '', '', '', ''
+    p_raw, vid, oversea, cookiepath, download_software, concat_software, probe_software,vid_raw = '', '', '', '', '', '', '', ''
     convert_ass = convert_ass_py2
     try:
         opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:l:e:b:m:n:", ['help', "av",'part', 'source', 'cookie', 'download', 'concat', 'log', 'export', 'probe', 'danmaku', 'slient'])
