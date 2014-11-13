@@ -1,7 +1,7 @@
 Biligrab
 ========
 
-Yet another danmaku and video file downloader of Bilibili.
+Yet another automatic/semi-automatic/manual danmaku and video file downloader of Bilibili.
 
 Integrated with most of the "black science".
 
@@ -23,18 +23,18 @@ The file should looks like:
 
     DedeUserID=123456;DedeUserID__ckMd5=****************;SESSDATA=*******************
 
-Interactive mode:
+Interactive mode (Note most of the functions are not avalable via this mode):
 
 python biligrab.py
 
-Or non-interact mode:
+Or command line mode:
 
 
-    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p) (-m)
+    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p) (-m) (-n)
     
     -h: Default: None
         Print this usage file.
-    
+        
     -a: Default: None
         The av number.
         If not set, Biligrab will use the falloff interact mode.
@@ -45,11 +45,12 @@ Or non-interact mode:
              1,2         [1, 2]
              1~3        [1, 2, 3]
             1,2~3       [1, 2, 3]
-        
-    -p: Default: 1
+            
+    -p: Default: 0
         The part number.
         Able to use the same syntax as "-a".
-                 
+        If set to 0, Biligrab will download all the avalable parts in the video.
+        
     -s: Default: 0
     Source to download.
     0: The original API source, can be Letv backup,
@@ -148,6 +149,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 History
 ----
+0.97.5: Add (auto) download all the pages; Auto PEP-8.
+
 0.97: Slient mode; Multiple video mode; Functions beautify; More error handling.
 
 0.96.2: Merge pull request #6, #7: Optimize Danmaku2ASS parameters and exception handling, thanks to @m13253's help; Fix error when cookie does not exist, thanks to @m13253's report.
