@@ -4,7 +4,7 @@
 # Purpose: Yet another danmaku and video file downloader of Bilibili.
 # Created: 11/06/2013
 '''
-Biligrab 0.97.5
+Biligrab 0.97.9
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
@@ -20,13 +20,20 @@ import urllib
 import urllib2
 import sys
 import math
+import json
 import commands
 import hashlib
 import getopt
-from danmaku2ass2 import *
 
 from xml.dom.minidom import parse, parseString
 import xml.dom.minidom
+
+try:
+    from danmaku2ass2 import *
+except:
+    pass
+
+
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
@@ -37,7 +44,7 @@ cookies, VIDEO_FORMAT = '', ''
 LOG_LEVEL, pages = 0, 0
 APPKEY = '85eb6835b0a1034e'
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = '0.97.5'
+VER = '0.97.9'
 FAKE_HEADER = {
     'User-Agent':
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36',
@@ -45,9 +52,16 @@ FAKE_HEADER = {
     'Pragma': 'no-cache'}
 LOCATION_DIR = os.getcwd()
 
+
 #----------------------------------------------------------------------
+def print_error(data):
+    """str->None"""
+    print('Dumping info...')
+    print('=======================DUMP DATA==================')
+    print(data)
+    print('========================DATA END==================')
 
-
+#----------------------------------------------------------------------
 def list_del_repeat(list):
     """delete repeating items in a list, and keep the order.
     http://www.cnblogs.com/infim/archive/2011/03/10/1979615.html"""
@@ -56,16 +70,12 @@ def list_del_repeat(list):
     return(l2)
 
 #----------------------------------------------------------------------
-
-
 def calc_sign(string):
     """str/any->str
     return MD5."""
     return str(hashlib.md5(str(string).encode('utf-8')).hexdigest())
 
 #----------------------------------------------------------------------
-
-
 def read_cookie(cookiepath):
     """str->list
     Original target: set the cookie
@@ -82,50 +92,34 @@ def read_cookie(cookiepath):
         return ['']
 
 #----------------------------------------------------------------------
-
-
 def clean_name(name):
     """str->str
     delete all the dramas in the filename."""
-    return (
-        str(name).strip().replace('\\',
-                                  ' ').replace('/', ' ').replace('&', ' ')
-    )
+    return (str(name).strip().replace('\\',' ').replace('/', ' ').replace('&', ' '))
 
 #----------------------------------------------------------------------
-
-
 def find_cid_api(vid, p, cookies):
     """find cid and print video detail
     str,int?,str->str,str,str,str
     TODO: Use json."""
     global cid, partname, title, videourl, pages
     cid = 0
-    title = ''
-    partname = ''
+    title , partname , pages, = '', '', ''
     if str(p) is '0' or str(p) is '1':
-        str2Hash = 'appkey=' + \
-            str(APPKEY) + '&id=' + str(vid) + '&type=xml' + str(SECRETKEY)
-        biliurl = 'https://api.bilibili.com/view?appkey=' + \
-            str(APPKEY) + '&id=' + str(vid) + \
-            '&type=xml&sign=' + calc_sign(str2Hash)
-        print('DEBUG: ' + biliurl)
+        str2Hash = 'appkey={APPKEY}&id={vid}&type=xml{SECRETKEY}'.format(APPKEY = APPKEY, vid = vid, SECRETKEY = SECRETKEY)
+        biliurl = 'https://api.bilibili.com/view?appkey={APPKEY}&id={vid}&type=xml&sign={sign}'.format(APPKEY = APPKEY, vid = vid, SECRETKEY = SECRETKEY, sign = calc_sign(str2Hash))
     else:
-        str2Hash = 'appkey=' + \
-            str(APPKEY) + '&id=' + str(vid) + '&page=' + \
-            str(p) + '&type=xml' + str(SECRETKEY)
-        biliurl = 'https://api.bilibili.com/view?appkey=' + \
-            str(APPKEY) + '&id=' + str(vid) + '&page=' + \
-            str(p) + '&type=xml&sign=' + calc_sign(str2Hash)
-        print('DEBUG: ' + biliurl)
-    videourl = 'http://www.bilibili.com/video/av' + \
-        str(vid) + '/index_' + str(p) + '.html'
+        str2Hash = 'appkey={APPKEY}&id={vid}&page={p}&type=xml{SECRETKEY}'.format(APPKEY = APPKEY, vid = vid, p = p, SECRETKEY = SECRETKEY)
+        biliurl = 'https://api.bilibili.com/view?appkey={APPKEY}&id={vid}&page={p}&type=xml&sign={sign}'.format(APPKEY = APPKEY, vid = vid, SECRETKEY = SECRETKEY, p = p, sign = calc_sign(str2Hash))
+    print('DEBUG: ' + biliurl)
+    videourl = 'http://www.bilibili.com/video/av{vid}/index_{p}.html'.format(vid = vid, p = p)
     print('INFO: Fetching webpage...')
     try:
-        # print(BILIGRAB_HEADER)
         request = urllib2.Request(biliurl, headers=BILIGRAB_HEADER)
         response = urllib2.urlopen(request)
         data = response.read()
+        if LOG_LEVEL == 1:
+            print_error(data)
         dom = parseString(data)
         for node in dom.getElementsByTagName('cid'):
             if node.parentNode.tagName == "info":
@@ -150,9 +144,7 @@ def find_cid_api(vid, p, cookies):
         print(
             'WARNING: Cannot connect to API server! \nIf you think this is wrong, please open an issue at \nhttps://github.com/cnbeining/Biligrab/issues with *ALL* the screen output, \nas well as your IP address and basic system info.\nYou can get these data via "-l".')
         if LOG_LEVEL == 1:
-            print('=======================DUMP DATA==================')
-            print(data)
-            print('========================DATA END==================')
+            print_error(data)
         else:
             print('WARNING: Cannot connect to API server!')
         return ['', '', '', '']
@@ -173,10 +165,7 @@ def find_cid_flvcd(videourl):
         data = f.read()
     data_list = data.split('\n')
     if LOG_LEVEL == 1:
-        print('Dumping info...')
-        print('=======================DUMP DATA==================')
-        print(data)
-        print('========================DATA END==================')
+        print_error(data)
     # Todo: read title
     for lines in data_list:
         if 'cid=' in lines:
@@ -187,32 +176,6 @@ def find_cid_flvcd(videourl):
             break
 
 #----------------------------------------------------------------------
-
-
-def find_link_flvcd(videourl):
-    """"""
-    print('INFO: Finding link via Flvcd...')
-    request = urllib2.Request('http://www.flvcd.com/parse.php?' +
-                              urllib.urlencode([('kw', videourl)]), headers=FAKE_HEADER)
-    request.add_header('Accept-encoding', 'gzip')
-    response = urllib2.urlopen(request)
-    data = response.read()
-    data_list = data.split('\n')
-    if LOG_LEVEL == 1:
-        print('Dumping info...')
-        print('=======================DUMP DATA==================')
-        print(data)
-        print('========================DATA END==================')
-    for items in data_list:
-        if 'name' in items and 'inf' in items and 'input' in items:
-            c = items
-            rawurlflvcd = c[59:-5]
-            rawurlflvcd = rawurlflvcd.split('|')
-            return rawurlflvcd
-
-#----------------------------------------------------------------------
-
-
 def check_dependencies(download_software, concat_software, probe_software):
     """None->str,str,str
     Will give softwares for concat, download and probe.
@@ -243,24 +206,17 @@ def check_dependencies(download_software, concat_software, probe_software):
     return name_list[0][0], name_list[1][0], name_list[2][0]
 
 #----------------------------------------------------------------------
-
-
 def download_video(part_number, download_software, video_link):
     """"""
     if download_software == 'aria2c':
-        os.system(
-            'aria2c -c -s16 -x16 -k1M --out ' +
-            part_number +
-            '.flv "' +
-            video_link +
-            '"')
+        cmd = 'aria2c -c -s16 -x16 -k1M --out {part_number}.flv "{video_link}"'
     elif download_software == 'wget':
-        os.system('wget -c -O ' + part_number + '.flv "' + video_link + '"')
+        cmd = 'wget -c -O {part_number}.flv "{video_link}"'
     elif download_software == 'curl':
-        os.system('curl -L -C -o ' + part_number + '.flv "' + video_link + '"')
+        cmd = 'curl -L -C -o {part_number}.flv "{video_link}"'
     elif download_software == 'axel':
-        os.system('axel -n 20 -o ' + part_number + '.flv "' + video_link + '"')
-
+        cmd = 'axel -n 20 -o {part_number}.flv "{video_link}"'
+    os.system(cmd.format(part_number = part_number, video_link = video_link))
 
 #----------------------------------------------------------------------
 def concat_videos(concat_software, vid_num, filename):
@@ -269,17 +225,14 @@ def concat_videos(concat_software, vid_num, filename):
     if concat_software == 'ffmpeg':
         f = open('ff.txt', 'w')
         ff = ''
-        os.getcwd()
+        cwd = os.getcwd()
         for i in range(vid_num):
-            ff = ff + 'file \'' + str(os.getcwd()) + '/' + str(i) + '.flv\'\n'
+            ff = ff + 'file "{cwd}/{i}.flv"\n'.format(cwd = cwd, i = i)
         ff = ff.encode("utf8")
         f.write(ff)
         f.close()
         if LOG_LEVEL == 1:
-            print('Dumping ff.txt...')
-            print('=======================DUMP DATA==================')
-            print(ff)
-            print('========================DATA END==================')
+            print_error(ff)
         print('INFO: Concating videos...')
         os.system('ffmpeg -f concat -i ff.txt -c copy "' + filename + '".mp4')
         VIDEO_FORMAT = 'mp4'
@@ -290,14 +243,10 @@ def concat_videos(concat_software, vid_num, filename):
             print('INFO: Done, enjoy yourself!')
         else:
             print('ERROR: Cannot concatenative files, trying to make flv...')
-            os.system(
-                'ffmpeg -f concat -i ff.txt -c copy "' +
-                filename +
-                '".flv')
+            os.system('ffmpeg -f concat -i ff.txt -c copy "' + filename + '".flv')
             VIDEO_FORMAT = 'flv'
             if os.path.isfile(str(filename + '.flv')):
-                print(
-                    'WARNING: FLV file made. Not possible to mux to MP4, highly likely due to audio format.')
+                print('WARNING: FLV file made. Not possible to mux to MP4, highly likely due to audio format.')
                 os.system('rm -r ff.txt')
                 for i in range(vid_num):
                     os.system('rm -r ' + str(i) + '.flv')
@@ -307,55 +256,126 @@ def concat_videos(concat_software, vid_num, filename):
         pass
 
 #----------------------------------------------------------------------
-
-
-def find_video_address_api(cid, header, method):
-    """"""
-    sign_this = calc_sign('appkey=' + APPKEY + '&cid=' + cid + SECRETKEY)
-    if method == '1':
-        try:
-            request = urllib2.Request(
-                'http://interface.bilibili.com/v_cdn_play?appkey=' +
-                APPKEY +
-                '&cid=' +
-                cid +
-                '&sign=' +
-                sign_this,
-                headers=header)
-        except:
-            print('ERROR: Cannot connect to CDN API server!')
-    elif method is '2':
-        # Force get oriurl
-        try:
-            request = urllib2.Request(
-                'http://interface.bilibili.com/player?appkey=' +
-                APPKEY +
-                '&cid=' +
-                cid +
-                '&sign=' +
-                sign_this,
-                headers=header)
-        except:
-            print('ERROR: Cannot connect to original source API server!')
-    else:
-        try:
-            request = urllib2.Request(
-                'http://interface.bilibili.com/playurl?appkey=' +
-                APPKEY +
-                '&cid=' +
-                cid +
-                '&sign=' +
-                sign_this,
-                headers=header)
-        except:
-            print('ERROR: Cannot connect to normal API server!')
-    response = urllib2.urlopen(request)
+def process_m3u8(url):
+    """str->list
+    Only Youku."""
+    url_list = []
+    request = urllib2.Request(url, headers=BILIGRAB_HEADER)
+    try:
+        response = urllib2.urlopen(request)
+    except:
+        print('ERROR: Cannot download required m3u8!')
+        return []
     data = response.read()
-    return data
+    if LOG_LEVEL == 1:
+        print_error(data)
+    data = data.split()
+    if 'youku' in url:
+        return [data[4].split('?')[0]]
 
 #----------------------------------------------------------------------
+def find_video_address_html5(vid, p, header):
+    """str,str,dict->list
+    Method #3."""
+    api_url = 'http://m.acg.tv/m/html5?aid={vid}&page={p}'.format(vid = vid, p = p)
+    request = urllib2.Request(api_url, headers=header)
+    url_list = []
+    try:
+        response = urllib2.urlopen(request)
+    except:
+        print('ERROR: Cannot connect to HTML5 API!')
+        return []
+    data = response.read()
+    if LOG_LEVEL == 1:
+        print_error(data)
+    info = json.loads(data.decode('utf-8'))
+    raw_url = info['src']
+    if 'error.mp4' in raw_url:
+        print('ERROR: HTML5 API returned ERROR or not avalable!')
+        return []
+    if 'm3u8' in raw_url:
+        print('INFO: Found m3u8, processing...')
+        return process_m3u8(raw_url)
+    return [raw_url]
 
 
+#----------------------------------------------------------------------
+def find_video_address_force_original(cid, header):
+    """str,str->str
+    Give the original URL, if possible.
+    Method #2."""
+        # Force get oriurl
+    sign_this = calc_sign('appkey={APPKEY}&cid={cid}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY))
+    api_url = 'http://interface.bilibili.com/player?'
+    request = urllib2.Request(api_url + 'appkey={APPKEY}&cid={cid}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this), headers=header)
+    response = urllib2.urlopen(request)
+    data = response.read()
+    if LOG_LEVEL == 1:
+        print_error(data)
+    data = data.split('\n')
+    for l in data:
+        if 'oriurl' in l:
+            originalurl = str(l[8:-9])
+            print('INFO: Original URL is ' + originalurl)
+            return originalurl
+    print('WARNING: Cannot get original URL! Chances are it does not exist.')
+    return ''
+
+#----------------------------------------------------------------------
+def find_link_flvcd(videourl):
+    """str->list
+    Used in method 2 and 5."""
+    print('INFO: Finding link via Flvcd...')
+    request = urllib2.Request('http://www.flvcd.com/parse.php?' +
+                              urllib.urlencode([('kw', videourl)]), headers=FAKE_HEADER)
+    request.add_header('Accept-encoding', 'gzip')
+    response = urllib2.urlopen(request)
+    data = response.read()
+    data_list = data.split('\n')
+    if LOG_LEVEL == 1:
+        print_error(data)
+    for items in data_list:
+        if 'name' in items and 'inf' in items and 'input' in items:
+            c = items
+            rawurlflvcd = c[59:-5]
+            rawurlflvcd = rawurlflvcd.split('|')
+            return rawurlflvcd
+
+#----------------------------------------------------------------------
+def find_video_address_normal_api(cid, header, method):
+    """str,str,str->list
+    Change in 0.98: Return the file list directly.
+    Method:
+    0: Original API
+    1: CDN API
+    2: Original URL API - Divided in another function
+    3: Mobile API - Divided in another function
+    4: Flvcd - Divided in another function
+    """
+    sign_this = calc_sign('appkey={APPKEY}&cid={cid}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY))
+    if method == '1':
+        api_url = 'http://interface.bilibili.com/v_cdn_play?'
+    else:  #Method 0 or other
+        api_url = 'http://interface.bilibili.com/playurl?'
+    request = urllib2.Request(api_url + 'appkey={APPKEY}&cid={cid}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this), headers=header)
+    response = urllib2.urlopen(request)
+    data = response.read()
+    if LOG_LEVEL == 1:
+        print_error(data)
+    for l in data.split('\n'):  # In case shit happens
+        if 'error.mp4' in l:
+            print('WARNING: API header may be blocked!')
+            return ['API_BLOCKED']
+    rawurl = []
+    originalurl = ''
+    dom = parseString(data)
+    for node in dom.getElementsByTagName('url'):
+        if node.parentNode.tagName == "durl":
+            rawurl.append(node.toxml()[14:-9])
+            # print(str(node.toxml()[14:-9]))
+    return rawurl
+
+#----------------------------------------------------------------------
 def get_resolution(filename, probe_software):
     """str,str->list"""
     resolution = []
@@ -366,35 +386,20 @@ def get_resolution(filename, probe_software):
         if probe_software == 'ffprobe':
             resolution = get_resolution_ffprobe(filename)
         if LOG_LEVEL == 1:
-            print(
-                'DEBUG: Software: ' +
-                probe_software +
-                ', resolution ' +
-                resolution)
+            print('DEBUG: Software: {probe_software}, resolution {resolution}'.format(probe_software = probe_software, resolution = resolution))
         return resolution
     except:  # magic number
         return[1280, 720]
 
 #----------------------------------------------------------------------
-
-
 def get_resolution_mediainfo(filename):
     """str->list
     [640,360]
     path to dimention"""
-    resolution = str(
-        os.popen(
-            'mediainfo \'--Inform=Video;%Width%x%Height%\' \'' +
-            filename +
-            '\'').read(
-        )).strip(
-    ).split(
-        'x')
+    resolution = str(os.popen('mediainfo \'--Inform=Video;%Width%x%Height%\' "' +filename +'"').read()).strip().split('x')
     return [int(resolution[0]), int(resolution[1])]
 
 #----------------------------------------------------------------------
-
-
 def get_resolution_ffprobe(filename):
     '''str->list
     [640,360]'''
@@ -426,8 +431,6 @@ def get_resolution_ffprobe(filename):
     return [int(width), int(height)]
 
 #----------------------------------------------------------------------
-
-
 def convert_ass_py3(filename, probe_software):
     """str,str->None
     With danmaku2ass, branch master.
@@ -450,8 +453,6 @@ def convert_ass_py3(filename, probe_software):
             '       Head to https://github.com/m13253/danmaku2ass/issues to complain about this.')
 
 #----------------------------------------------------------------------
-
-
 def convert_ass_py2(filename, probe_software):
     """str,str->None
     With danmaku2ass, branch py2.
@@ -482,16 +483,13 @@ def download_danmaku(cid, filename):
     If danmaku only, will see whether need to export ASS."""
     print('INFO: Fetching XML...')
     os.system(
-        'curl -o "' +
-        filename +
-        '.xml" --compressed  http://comment.bilibili.com/' +
-        cid +
-        '.xml')
+        'curl -o "' + filename +'.xml" --compressed  http://comment.bilibili.com/' + cid + '.xml')
     #os.system('gzip -d '+cid+'.xml.gz')
     print('INFO: The XML file, ' + filename + '.xml should be ready...enjoy!')
 
 
-#
+
+########################################################################
 class DanmakuOnlyException(Exception):
 
     '''Deal with DanmakuOnly to stop the main() function.'''
@@ -503,11 +501,8 @@ class DanmakuOnlyException(Exception):
 
     def __str__(self):
         return repr(self.value)
-    #
 
-#
-
-
+########################################################################
 class Danmaku2Ass2Exception(Exception):
 
     '''Deal with Danmaku2ASS2 to stop the main() function.'''
@@ -519,11 +514,8 @@ class Danmaku2Ass2Exception(Exception):
 
     def __str__(self):
         return repr(self.value)
-    #
 
-#
-
-
+########################################################################
 class NoCidException(Exception):
 
     '''Deal with no cid to stop the main() function.'''
@@ -535,11 +527,8 @@ class NoCidException(Exception):
 
     def __str__(self):
         return repr(self.value)
-    #
 
-#
-
-
+########################################################################
 class NoVideoURLException(Exception):
 
     '''Deal with no video URL to stop the main() function.'''
@@ -551,14 +540,13 @@ class NoVideoURLException(Exception):
 
     def __str__(self):
         return repr(self.value)
-    #
+
+
 #----------------------------------------------------------------------
-
-
 def main(
     vid,
     p, 
-    oversea,
+    oversea, 
     cookies,
     download_software,
     concat_software,
@@ -566,21 +554,18 @@ def main(
     probe_software,
         danmaku_only):
     global cid, partname, title, videourl, is_first_run
-    videourl = 'http://www.bilibili.com/video/av' + \
-        str(vid) + '/index_' + str(p) + '.html'
+    videourl = 'http://www.bilibili.com/video/av{vid}/index_{p}.html'.format(vid = vid, p = p)
     # Check both software
     print(concat_software, download_software)
-    # Start to find cid, api-flvcd
-    find_cid_api(vid, p, cookies)
-    global cid
+    # Start to find cid, api
+    cid, partname, title, pages = find_cid_api(vid, p, cookies)
     if cid is 0:
         print('WARNING: Cannot find cid, trying to do it brutely...')
         find_cid_flvcd(videourl)
     if cid is 0:
         if IS_SLIENT == 0:
             is_black3 = str(
-                raw_input(
-                    'WARNING: Strange, still cannot find cid... \nType y for trying the unpredictable way, or input the cid by yourself; Press ENTER to quit.'))
+                raw_input('WARNING: Strange, still cannot find cid... \nType y for trying the unpredictable way, or input the cid by yourself; Press ENTER to quit.'))
         else:
             is_black3 = 'y'
         if 'y' in str(is_black3):
@@ -620,60 +605,33 @@ def main(
     # Find video location
     print('INFO: Finding video location...')
     # try api
-    data = find_video_address_api(cid, BILIGRAB_HEADER, oversea)
-    if LOG_LEVEL == 1:
-        print('Dumping info...')
-        print('=======================DUMP DATA==================')
-        print(data)
-        print('========================DATA END==================')
-    for l in data.split('\n'):  # In case shit happens
-        if 'error.mp4' in l:
-            print(
-                'WARNING: API header may be blocked! Using fake one instead...')
-            data = find_video_address_api(cid, FAKE_HEADER, oversea)
-            if LOG_LEVEL == 1:
-                print('Dumping info...')
-                print('=======================DUMP DATA==================')
-                print(data)
-                print('========================DATA END==================')
-    rawurl = []
-    originalurl = ''
-    if oversea is '2':
-        data = data.split('\n')
-        for l in data:
-            if 'oriurl' in l:
-                originalurl = str(l[8:-9])
-                print('INFO: Original URL is ' + originalurl)
-                break
-        if originalurl is not '':
-            rawurl = find_link_flvcd(originalurl)
-        else:
-            print('WARNING: Cannot get original URL! Using falloff plan...')
-            pass
+    if oversea == '2':
+        raw_link = find_video_address_force_original(cid, BILIGRAB_HEADER)
+        rawurl = find_link_flvcd(raw_link)
+    elif oversea == '3':
+        rawurl = find_video_address_html5(vid, p, BILIGRAB_HEADER)
+    elif oversea == '4':
+        rawurl = find_link_flvcd(videourl)
     else:
-        dom = parseString(data)
-        for node in dom.getElementsByTagName('url'):
-            if node.parentNode.tagName == "durl":
-                rawurl.append(node.toxml()[14:-9])
-                # print(str(node.toxml()[14:-9]))
-            pass
-    if len(rawurl) == 0:  # hope this never happen
+        rawurl = find_video_address_normal_api(cid, BILIGRAB_HEADER, oversea)
+        if 'API_BLOCKED' in rawurl[0]:
+            print('WARNING: API header may be blocked! Using fake one instead...')
+            rawurl = find_video_address_normal_api(cid, FAKE_HEADER, oversea)
+    if len(rawurl) == 0 and oversea != '4':  # hope this never happen
+        print('WARNING: API failed, using falloff plan...')
         rawurl = find_link_flvcd(videourl)
         # flvcd
     vid_num = len(rawurl)
     if IS_SLIENT == 0 and vid_num == 0:
-        rawurl = list(
-            str(raw_input('ERROR: Cannot get download URL! If you know the url, please enter it now; URL1|URL2...'))).split('|')
+        rawurl = list(str(raw_input('ERROR: Cannot get download URL! If you know the url, please enter it now; URL1|URL2...'))).split('|')
     vid_num = len(rawurl)
     if vid_num is 0:  # shit really hit the fan
         raise NoVIdeoURLException('FATAL: Cannot get video URL anyway!')
-    print('INFO: ' + str(vid_num) + ' videos in part ' + str(part_now)
-          + ' to download, fetch yourself a cup of coffee...')
+    print('INFO: {vid_num} videos in part {part_now} to download, fetch yourself a cup of coffee...'.format(vid_num = vid_num, part_now = part_now))
     for i in range(vid_num):
         video_link = rawurl[i]
         part_number = str(i)
-        print('INFO: Downloading ' + str(i + 1) + ' of ' + str(vid_num)
-              + ' videos in part ' + str(part_now) + '...')
+        print('INFO: Downloading {slice_now} of {vid_num} videos in part {part_now}...'.format(slice_now = str(i + 1), vid_num = vid_num, part_now = part_now))
         # Call a function to support multiple download softwares
         download_video(part_number, download_software, video_link)
     concat_videos(concat_software, vid_num, filename)
@@ -735,8 +693,6 @@ def get_full_p(p_raw):
     return p_list
 
 #----------------------------------------------------------------------
-
-
 def check_dependencies_danmaku2ass(is_export):
     """int,str->int,str"""
     if is_export == 3:
@@ -777,27 +733,25 @@ def check_dependencies_danmaku2ass(is_export):
     return is_export, convert_ass
 
 #----------------------------------------------------------------------
-
-
 def usage():
     """"""
     print('''
     Biligrab
-
+    
     https://github.com/cnbeining/Biligrab
     http://www.cnbeining.com/
-
+    
     Beining@ACICFG
-
-
-
+    
+    
+    
     Usage:
-
+    
     python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p) (-m) (-n)
-
+    
     -h: Default: None
         Print this usage file.
-
+        a
     -a: Default: None
         The av number.
         If not set, Biligrab will use the falloff interact mode.
@@ -808,12 +762,12 @@ def usage():
              1,2         [1, 2]
              1~3        [1, 2, 3]
             1,2~3       [1, 2, 3]
-
+            
     -p: Default: 0
         The part number.
         Able to use the same syntax as "-a".
         If set to 0, Biligrab will download all the avalable parts in the video.
-
+        
     -s: Default: 0
     Source to download.
     0: The original API source, can be Letv backup,
@@ -825,22 +779,26 @@ def usage():
        Use Flvcd to parase the video, but would fail if
        1) The original source DNE, e.g., some old videos
        2) The original source is Letvcloud itself.
-       3) Other unknown reason(s) that stops Flvcd from parase the video.
+       3) Other unknown reason(s) that stops Flvcd from parasing the video.
     For any video that failed to parse, Biligrab will try to use Flvcd.
     (Mainly for oversea users regarding to copyright-restricted bangumies.)
     If the API is blocked, Biligrab would fake the UA.
-
+    3: (Not stable) Use the HTML5 API.
+       This works for downloading some cached Letvcloud videos, but is slow, and would fail for no reason sometimes.
+    4: Use Flvcd.
+       Good to fight with oversea and copyright restriction, but not working with iQiyi.
+       
     -c: Default: ./bilicookies
     The path of cookies.
     Use cookies to visit member-only videos.
-
+    
     -d: Default: None
     Set the desired download software.
     Biligrab supports aria2c(16 threads), axel(20 threads), wget and curl by far.
     If not set, Biligrab will detect an avalable one;
     If none of those is avalable, Biligrab will quit.
     For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
-
+    
     -v: Default:None
     Set the desired download software.
     Biligrab supports ffmpeg by far.
@@ -848,10 +806,10 @@ def usage():
     If none of those is avalable, Biligrab will quit.
     For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
     Make sure you include a *working* command line example of this software!
-
+    
     -l: Default: 0
     Dump the log of the output for better debugging.
-
+    
     -e: Default: 0
     Export Danmaku to ASS file.
     Fulfilled with danmaku2ass(https://github.com/m13253/danmaku2ass/tree/py2),
@@ -862,7 +820,7 @@ def usage():
     If set to 3, Biligrab will use Danmaku2ass's master branch, which would require
     a python3 callable via 'python3'.
     If python3 not callable or danmaku2ass2/3 DNE, Biligrab will ask for action.
-
+    
     -p: Default: None
     Set the probe software.
     Biligrab supports Mediainfo and FFprobe.
@@ -870,10 +828,10 @@ def usage():
     If none of those is avalable, Biligrab will quit.
     For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
     Make sure you include a *working* command line example of this software!
-
+    
     -m: Default: 0
     Only download the danmaku.
-
+    
     -n: Default: 0
     Slient Mode.
     Biligrab will not ask any question.
@@ -973,13 +931,6 @@ if __name__ == '__main__':
         p_raw = str(raw_input('P'))
         oversea = str(raw_input('Source?'))
         cookiepath = './bilicookies'
-    '''
-    if len(vid) == 0:
-        vid = str(raw_input('Please input: av'))
-        if len(vid) == 0:
-            print('Cannot download nothing!')
-            exit()
-    '''
     if len(cookiepath) == 0:
         cookiepath = './bilicookies'
     if len(p_raw) == 0:
@@ -988,17 +939,14 @@ if __name__ == '__main__':
     if len(oversea) == 0:
         oversea = '0'
         print('INFO: Oversea not set, use original API(methon 0).')
-    concat_software, download_software, probe_software = check_dependencies(
-        download_software, concat_software, probe_software)
+    concat_software, download_software, probe_software = check_dependencies(download_software, concat_software, probe_software)
     p_list = get_full_p(p_raw)
     av_list = get_full_p(vid_raw)
     if len(av_list) > 1 and len(p_list) > 1:
-        print(
-            'WARNING: You are downloading multi parts from multiple videos! This may result in unpredictable outputs!')
+        print('WARNING: You are downloading multi parts from multiple videos! This may result in unpredictable outputs!')
         if IS_SLIENT == 0:
             input_raw = str(
-                raw_input(
-                    'Enter "y" to continue, "n" to only download the first part, "q" to quit, or enter the part number you want.'))
+                raw_input('Enter "y" to continue, "n" to only download the first part, "q" to quit, or enter the part number you want.'))
             if input_raw == 'y':
                 pass
             elif input_raw == 'n':
@@ -1009,15 +957,12 @@ if __name__ == '__main__':
                 p_list = get_full_p(input_raw)
     cookies = read_cookie(cookiepath)
     global BILIGRAB_HEADER
-    # deal with danmaku2ass's drama
-    # Twice in case someone failed to check dependencies
+    # deal with danmaku2ass's drama / Twice in case someone failed to check dependencies
     is_export, convert_ass = check_dependencies_danmaku2ass(is_export)
     is_export, convert_ass = check_dependencies_danmaku2ass(is_export)
-    BILIGRAB_HEADER = {'User-Agent': 'Biligrab / ' +
-                       str(VER) + ' (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache', 'Cookie': cookies[0]}
+    BILIGRAB_HEADER = {'User-Agent': 'Biligrab / ' + str(VER) + ' (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache', 'Cookie': cookies[0]}
     if LOG_LEVEL == 1:
-        print(
-            '!!!!!!!!!!!!!!!!!!!!!!!\nWARNING: This log contains some sensive data. You may want to delete some part of the data before you post it publicly!\n!!!!!!!!!!!!!!!!!!!!!!!')
+        print('!!!!!!!!!!!!!!!!!!!!!!!\nWARNING: This log contains some sensive data. You may want to delete some part of the data before you post it publicly!\n!!!!!!!!!!!!!!!!!!!!!!!')
         print(BILIGRAB_HEADER)
         try:
             request = urllib2.Request(
@@ -1026,8 +971,7 @@ if __name__ == '__main__':
             response = urllib2.urlopen(request)
             data = response.read()
             print('INFO: Dumping info...')
-            print(
-                '!!!!!!!!!!!!!!!!!!!!!!!\nWARNING: This log contains some sensive data. You may want to delete some part of the data before you post it publicly!\n!!!!!!!!!!!!!!!!!!!!!!!')
+            print('!!!!!!!!!!!!!!!!!!!!!!!\nWARNING: This log contains some sensive data. You may want to delete some part of the data before you post it publicly!\n!!!!!!!!!!!!!!!!!!!!!!!')
             print('=======================DUMP DATA==================')
             print(data)
             print('========================DATA END==================')
@@ -1058,13 +1002,7 @@ if __name__ == '__main__':
                     print('WARNING: Download the first part of the video...')
                     p_raw = '1'
                     p_list = [1]
-            print(
-                'INFO: Your target download is av' +
-                vid +
-                ', part ' +
-                p_raw +
-                ', from source ' +
-                oversea)
+            print('INFO: Your target download is av{vid}, part {p_raw}, from source {oversea}'.format(vid = vid, p_raw = p_raw, oversea = oversea))
         for p in p_list:
             reload(sys)
             sys.setdefaultencoding('utf-8')
@@ -1085,8 +1023,6 @@ if __name__ == '__main__':
                 pass
             except Exception as e:
                 print('ERROR: Biligrab failed: %s' % e)
-                print(
-                    '       If you think this should not happen, please dump your log using "-l", and open a issue ar https://github.com/cnbeining/Biligrab/issues .')
-                print(
-                    '       Make sure you delete all the sensive data before you post it publicly.')
+                print('       If you think this should not happen, please dump your log using "-l", and open a issue ar https://github.com/cnbeining/Biligrab/issues .')
+                print('       Make sure you delete all the sensive data before you post it publicly.')
     exit()

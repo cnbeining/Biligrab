@@ -3,9 +3,9 @@ Biligrab
 
 Yet another automatic/semi-automatic/manual danmaku and video file downloader of Bilibili.
 
-Integrated with most of the "black science".
+Integrated with most of the "black science". Good to bypass some copyright and geolocation restrictions.
 
-4 independent ways to parse source(s).
+5 independent ways to parse source(s)! 
 
 Auto concat and convert to MP4 (or FLV, even nothing, if not possible) file(s), direct integrate with Mukioplayer-Py-Mac(https://github.com/cnbeining/Mukioplayer-Py-Mac  , the Flash danmaku playing solution) and ABPlayer-HTML5-Mac(https://github.com/cnbeining/ABPlayerHTML5-Py--nix  , the HTML5 playing solution, preferred). 
 
@@ -34,7 +34,7 @@ Or command line mode:
     
     -h: Default: None
         Print this usage file.
-        
+        a
     -a: Default: None
         The av number.
         If not set, Biligrab will use the falloff interact mode.
@@ -62,11 +62,15 @@ Or command line mode:
        Use Flvcd to parase the video, but would fail if
        1) The original source DNE, e.g., some old videos
        2) The original source is Letvcloud itself.
-       3) Other unknown reason(s) that stops Flvcd from parase the video.
+       3) Other unknown reason(s) that stops Flvcd from parasing the video.
     For any video that failed to parse, Biligrab will try to use Flvcd.
     (Mainly for oversea users regarding to copyright-restricted bangumies.)
     If the API is blocked, Biligrab would fake the UA.
-    
+    3: (Not stable) Use the HTML5 API.
+       This works for downloading some cached Letvcloud videos, but is slow, and would fail for no reason sometimes.
+    4: Use Flvcd.
+       Good to fight with oversea and copyright restriction, but not working with iQiyi.
+       
     -c: Default: ./bilicookies
     The path of cookies.
     Use cookies to visit member-only videos.
@@ -149,6 +153,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 History
 ----
+0.97.9: Rewrite URL retrive logic; Divide URL retrive to functions; Change to ```.format()``` style; Add HTML5 API; Directly use Flvcd; Beautify ERROR logging.
+
 0.97.5: Add (auto) download all the pages; Auto PEP-8.
 
 0.97: Slient mode; Multiple video mode; Functions beautify; More error handling.
