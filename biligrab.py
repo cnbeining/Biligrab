@@ -3,8 +3,30 @@
 # Author: Beining --<ACICFG>
 # Purpose: Yet another danmaku and video file downloader of Bilibili.
 # Created: 11/06/2013
+# 
+# Biligrab is licensed under MIT licence
+# 
+# Copyright (c) 2013-2014
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the “Software”), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 '''
-Biligrab 0.97.9
+Biligrab 0.98
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
@@ -22,8 +44,10 @@ import sys
 import math
 import json
 import commands
+import subprocess
 import hashlib
 import getopt
+import logging
 
 from xml.dom.minidom import parse, parseString
 import xml.dom.minidom
@@ -38,13 +62,13 @@ except:
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-global vid, cid, partname, title, videourl, part_now, is_first_run, APPKEY, SECRETKEY, LOG_LEVEL, VER, LOCATION_DIR, VIDEO_FORMAT, convert_ass, is_export, IS_SLIENT, pages
+global vid, cid, partname, title, videourl, part_now, is_first_run, APPKEY, SECRETKEY, LOG_LEVEL, VER, LOCATION_DIR, VIDEO_FORMAT, convert_ass, is_export, IS_SLIENT, pages, IS_M3U, FFPROBE_USABLE
 
 cookies, VIDEO_FORMAT = '', ''
-LOG_LEVEL, pages = 0, 0
+LOG_LEVEL, pages, FFPROBE_USABLE = 0, 0, 0
 APPKEY = '85eb6835b0a1034e'
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = '0.97.9'
+VER = '0.98'
 FAKE_HEADER = {
     'User-Agent':
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36',
@@ -95,7 +119,7 @@ def read_cookie(cookiepath):
 def clean_name(name):
     """str->str
     delete all the dramas in the filename."""
-    return (str(name).strip().replace('\\',' ').replace('/', ' ').replace('&', ' '))
+    return (str(name).strip().replace('\\',' ').replace('/', ' ').replace('&', ' ')).replace('-', ' ')
 
 #----------------------------------------------------------------------
 def find_cid_api(vid, p, cookies):
@@ -148,7 +172,6 @@ def find_cid_api(vid, p, cookies):
         else:
             print('WARNING: Cannot connect to API server!')
         return ['', '', '', '']
-
 
 #----------------------------------------------------------------------
 def find_cid_flvcd(videourl):
@@ -227,7 +250,7 @@ def concat_videos(concat_software, vid_num, filename):
         ff = ''
         cwd = os.getcwd()
         for i in range(vid_num):
-            ff = ff + 'file "{cwd}/{i}.flv"\n'.format(cwd = cwd, i = i)
+            ff = ff + 'file \'{cwd}/{i}.flv\'\n'.format(cwd = cwd, i = i)
         ff = ff.encode("utf8")
         f.write(ff)
         f.close()
@@ -274,6 +297,18 @@ def process_m3u8(url):
         return [data[4].split('?')[0]]
 
 #----------------------------------------------------------------------
+def make_m3u8(video_list):
+    """list->str
+    list:
+    [(VIDEO_URL, TIME_IN_SEC), ...]"""
+    TARGETDURATION = int(max([i[1] for i in video_list])) + 1
+    line = '#EXTM3U\n#EXT-X-TARGETDURATION:{TARGETDURATION}\n#EXT-X-VERSION:2\n'.format(TARGETDURATION = TARGETDURATION)
+    for i in video_list:
+        line += '#EXTINF:{time}\n{url}\n'.format(time = str(i[1]), url = i[0])
+    line += '#EXT-X-ENDLIST'
+    return line
+
+#----------------------------------------------------------------------
 def find_video_address_html5(vid, p, header):
     """str,str,dict->list
     Method #3."""
@@ -297,7 +332,6 @@ def find_video_address_html5(vid, p, header):
         print('INFO: Found m3u8, processing...')
         return process_m3u8(raw_url)
     return [raw_url]
-
 
 #----------------------------------------------------------------------
 def find_video_address_force_original(cid, header):
@@ -342,7 +376,7 @@ def find_link_flvcd(videourl):
             return rawurlflvcd
 
 #----------------------------------------------------------------------
-def find_video_address_normal_api(cid, header, method):
+def find_video_address_normal_api(cid, header, method, convert_m3u = False):
     """str,str,str->list
     Change in 0.98: Return the file list directly.
     Method:
@@ -351,6 +385,7 @@ def find_video_address_normal_api(cid, header, method):
     2: Original URL API - Divided in another function
     3: Mobile API - Divided in another function
     4: Flvcd - Divided in another function
+     [(VIDEO_URL, TIME_IN_SEC), ...]
     """
     sign_this = calc_sign('appkey={APPKEY}&cid={cid}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY))
     if method == '1':
@@ -364,15 +399,39 @@ def find_video_address_normal_api(cid, header, method):
         print_error(data)
     for l in data.split('\n'):  # In case shit happens
         if 'error.mp4' in l:
-            print('WARNING: API header may be blocked!')
-            return ['API_BLOCKED']
+            logging.warning('API header may be blocked!')
+            return []
     rawurl = []
     originalurl = ''
     dom = parseString(data)
-    for node in dom.getElementsByTagName('url'):
-        if node.parentNode.tagName == "durl":
-            rawurl.append(node.toxml()[14:-9])
-            # print(str(node.toxml()[14:-9]))
+    if convert_m3u:
+        for node in dom.getElementsByTagName('durl'):
+            length = node.getElementsByTagName('length')[0]
+            url = node.getElementsByTagName('url')[0]
+            rawurl.append((url.childNodes[0].data, int(int(length.childNodes[0].data) / 1000) + 1))
+    else:
+        for node in dom.getElementsByTagName('durl'):
+            url = node.getElementsByTagName('url')[0]
+            rawurl.append(url.childNodes[0].data)
+    return rawurl
+
+#----------------------------------------------------------------------
+def get_video(oversea, convert_m3u = False):
+    """str->list
+    A full parser for getting video."""
+    rawurl = []
+    if oversea == '2':
+        raw_link = find_video_address_force_original(cid, BILIGRAB_HEADER)
+        rawurl = find_link_flvcd(raw_link)
+    elif oversea == '3':
+        rawurl = find_video_address_html5(vid, p, BILIGRAB_HEADER)
+    elif oversea == '4':
+        rawurl = find_link_flvcd(videourl)
+    else:
+        rawurl = find_video_address_normal_api(cid, BILIGRAB_HEADER, oversea, convert_m3u)
+        if 'API_BLOCKED' in rawurl[0]:
+            print('WARNING: API header may be blocked! Using fake one instead...')
+            rawurl = find_video_address_normal_api(cid, FAKE_HEADER, oversea, convert_m3u)
     return rawurl
 
 #----------------------------------------------------------------------
@@ -431,7 +490,31 @@ def get_resolution_ffprobe(filename):
     return [int(width), int(height)]
 
 #----------------------------------------------------------------------
-def convert_ass_py3(filename, probe_software):
+def getvideosize(url, verbose=False):
+    try:
+        if url.startswith('http:') or url.startswith('https:'):
+            ffprobe_command = ['ffprobe', '-icy', '0', '-loglevel', 'repeat+warning' if verbose else 'repeat+error', '-print_format', 'json', '-select_streams', 'v', '-show_streams', '-timeout', '60000000', '-user-agent', BILIGRAB_UA, url]
+        else:
+            ffprobe_command = ['ffprobe', '-loglevel', 'repeat+warning' if verbose else 'repeat+error', '-print_format', 'json', '-select_streams', 'v', '-show_streams', url]
+        logcommand(ffprobe_command)
+        ffprobe_process = subprocess.Popen(ffprobe_command, stdout=subprocess.PIPE)
+        try:
+            ffprobe_output = json.loads(ffprobe_process.communicate()[0].decode('utf-8', 'replace'))
+        except KeyboardInterrupt:
+            logging.warning('Cancelling getting video size, press Ctrl-C again to terminate.')
+            ffprobe_process.terminate()
+            return 0, 0
+        width, height, widthxheight = 0, 0, 0
+        for stream in dict.get(ffprobe_output, 'streams') or []:
+            if dict.get(stream, 'width')*dict.get(stream, 'height') > widthxheight:
+                width, height = dict.get(stream, 'width'), dict.get(stream, 'height')
+        return [int(width), int(height)]
+    except Exception as e:
+        logorraise(e)
+        return [0, 0]
+
+#----------------------------------------------------------------------
+def convert_ass_py3(filename, probe_software, resolution = [0, 0]):
     """str,str->None
     With danmaku2ass, branch master.
     https://github.com/m13253/danmaku2ass/
@@ -439,21 +522,23 @@ def convert_ass_py3(filename, probe_software):
     GPLv3
     A simple way to do that.
     resolution_str:1920x1080"""
-    print('INFO: Converting danmaku to ASS file with danmaku2ass(main)...')
-    xml_name = os.path.abspath(xml_name + '.xml')
+    xml_name = os.path.abspath(filename + '.xml')
     ass_name = filename + '.ass'
-    print('INFO: Trying to get resolution...')
-    resolution = get_resolution(filename, probe_software)
+    print('INFO: Converting danmaku to ASS file with danmaku2ass(main)...')
+    print(resolution)
+    print('INFO: Resolution is %dx%d' % (resolution[0], resolution[1]))
+    if resolution == [0, 0]:
+        print('INFO: Trying to get resolution...')
+        resolution = get_resolution(filename, probe_software)
     print('INFO: Resolution is %dx%d' % (resolution[0], resolution[1]))
     if os.system('python3 %s/danmaku2ass3.py -o %s -s %dx%d -fs %d -a 0.8 -l 8 %s' % (LOCATION_DIR, ass_name, resolution[0], resolution[1], int(math.ceil(resolution[1] / 21.6)), xml_name)) == 0:
         print('INFO: The ASS file should be ready!')
     else:
         print('ERROR: Danmaku2ASS failed.')
-        print(
-            '       Head to https://github.com/m13253/danmaku2ass/issues to complain about this.')
+        print('       Head to https://github.com/m13253/danmaku2ass/issues to complain about this.')
 
 #----------------------------------------------------------------------
-def convert_ass_py2(filename, probe_software):
+def convert_ass_py2(filename, probe_software, resolution = [0, 0]):
     """str,str->None
     With danmaku2ass, branch py2.
     https://github.com/m13253/danmaku2ass/tree/py2
@@ -461,9 +546,10 @@ def convert_ass_py2(filename, probe_software):
     GPLv3"""
     print('INFO: Converting danmaku to ASS file with danmaku2ass(py2)...')
     xml_name = filename + '.xml'
-    print('INFO: Trying to get resolution...')
-    resolution = get_resolution(filename, probe_software)
-    print('INFO: Resoution is ' + str(resolution))
+    if resolution == [0, 0]:
+        print('INFO: Trying to get resolution...')
+        resolution = get_resolution(filename, probe_software)
+    print('INFO: Resolution is %dx%d' % (resolution[0], resolution[1]))
     #convert_ass(xml_name, filename + '.ass', resolution)
     try:
         Danmaku2ASS(xml_name, filename + '.ass', resolution[0], resolution[1],
@@ -471,9 +557,7 @@ def convert_ass_py2(filename, probe_software):
         print('INFO: The ASS file should be ready!')
     except Exception as e:
         print('ERROR: Danmaku2ASS failed: %s' % e)
-        print(
-            '       Head to https://github.com/m13253/danmaku2ass/issues to complain about this.')
-
+        print('       Head to https://github.com/m13253/danmaku2ass/issues to complain about this.')
 
 #----------------------------------------------------------------------
 def download_danmaku(cid, filename):
@@ -487,7 +571,16 @@ def download_danmaku(cid, filename):
     #os.system('gzip -d '+cid+'.xml.gz')
     print('INFO: The XML file, ' + filename + '.xml should be ready...enjoy!')
 
+#----------------------------------------------------------------------
+def logcommand(command_line):
+    logging.debug('Executing: '+' '.join('\''+i+'\'' if ' ' in i or '&' in i or '"' in i else i for i in command_line))
 
+#----------------------------------------------------------------------
+def logorraise(message, debug=False):
+    if debug:
+        raise message
+    else:
+        logging.error(str(message))    
 
 ########################################################################
 class DanmakuOnlyException(Exception):
@@ -541,6 +634,18 @@ class NoVideoURLException(Exception):
     def __str__(self):
         return repr(self.value)
 
+########################################################################
+class ExportM3UException(Exception):
+
+    '''Deal with export to m3u to stop the main() function.'''
+    #----------------------------------------------------------------------
+
+    def __init__(self, value):
+        self.value = value
+    #----------------------------------------------------------------------
+
+    def __str__(self):
+        return repr(self.value)
 
 #----------------------------------------------------------------------
 def main(
@@ -597,30 +702,34 @@ def main(
         os.chdir(folder_to_make)
     # Download Danmaku
     download_danmaku(cid, filename)
-    if is_export >= 1 and danmaku_only == 1:
-        # if requested to stop
-        convert_ass(filename, probe_software)
+    if is_export >= 1 and IS_M3U != 1 and danmaku_only == 1:
+        rawurl = get_video(oversea, convert_m3u=True)
+        resolution = getvideosize(rawurl[0])
+        convert_ass(filename, probe_software, resolution = resolution)
+    if IS_M3U == 1:
+        #M3U export, then stop
+        rawurl = get_video(oversea, convert_m3u=True)
+        resolution = getvideosize(rawurl[0][0])
+        m3u_file = make_m3u8(rawurl)
+        f = open(filename + '.m3u', 'w')
+        cwd = os.getcwd()
+        m3u_file = m3u_file.encode("utf8")
+        f.write(m3u_file)
+        f.close()
+        convert_ass(filename, probe_software, resolution = resolution)
+        if LOG_LEVEL == 1:
+            print_error(m3u_file)
+        raise ExportM3UException('INFO: Export to M3U')
     if danmaku_only == 1:
         raise DanmakuOnlyException('INFO: Danmaku only')
     # Find video location
     print('INFO: Finding video location...')
     # try api
-    if oversea == '2':
-        raw_link = find_video_address_force_original(cid, BILIGRAB_HEADER)
-        rawurl = find_link_flvcd(raw_link)
-    elif oversea == '3':
-        rawurl = find_video_address_html5(vid, p, BILIGRAB_HEADER)
-    elif oversea == '4':
-        rawurl = find_link_flvcd(videourl)
-    else:
-        rawurl = find_video_address_normal_api(cid, BILIGRAB_HEADER, oversea)
-        if 'API_BLOCKED' in rawurl[0]:
-            print('WARNING: API header may be blocked! Using fake one instead...')
-            rawurl = find_video_address_normal_api(cid, FAKE_HEADER, oversea)
+        # flvcd
+    rawurl = get_video(oversea)
     if len(rawurl) == 0 and oversea != '4':  # hope this never happen
         print('WARNING: API failed, using falloff plan...')
         rawurl = find_link_flvcd(videourl)
-        # flvcd
     vid_num = len(rawurl)
     if IS_SLIENT == 0 and vid_num == 0:
         rawurl = list(str(raw_input('ERROR: Cannot get download URL! If you know the url, please enter it now; URL1|URL2...'))).split('|')
@@ -640,9 +749,8 @@ def main(
             convert_ass(filename, probe_software)
         except:
             print('WARNING: Problem with ASS convertion!')
-            pass
+            pass    
     print('INFO: Part Done!')
-
 
 #----------------------------------------------------------------------
 def get_full_p(p_raw):
@@ -691,6 +799,26 @@ def get_full_p(p_raw):
                 # break
     p_list = list_del_repeat(p_list)
     return p_list
+
+#----------------------------------------------------------------------
+def check_dependencies_exportm3u(IS_M3U):
+    """int,str->int,str"""
+    if IS_M3U == 1:
+        output = commands.getstatusoutput('ffprobe --help')
+        if str(output[0]) == '32512':
+            err_input = str(raw_input('ERROR: ffprobe DNE, python3 does not exist or not callable! Do you want to exit, ignore or stop the converting?(e/i/s)'))
+            if err_input == 'e':
+                exit()
+            elif err_input == '2':
+                FFPROBE_USABLE = 0
+            elif err_input == 's':
+                IS_M3U = 0
+            else:
+                print('WARNING: Cannot read input, stop the converting!')
+                IS_M3U = 0
+        else:
+            FFPROBE_USABLE = 1
+    return IS_M3U
 
 #----------------------------------------------------------------------
 def check_dependencies_danmaku2ass(is_export):
@@ -747,7 +875,7 @@ def usage():
     
     Usage:
     
-    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p) (-m) (-n)
+    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p) (-m) (-n) (-u)
     
     -h: Default: None
         Print this usage file.
@@ -810,7 +938,7 @@ def usage():
     -l: Default: 0
     Dump the log of the output for better debugging.
     
-    -e: Default: 0
+    -e: Default: 1
     Export Danmaku to ASS file.
     Fulfilled with danmaku2ass(https://github.com/m13253/danmaku2ass/tree/py2),
     Author: @m13253, GPLv3 License.
@@ -835,19 +963,24 @@ def usage():
     -n: Default: 0
     Slient Mode.
     Biligrab will not ask any question.
+    
+    -u: Default: 0
+    Export video link to .m3u file, which can be used with MPlayer, mpc, VLC, etc.
+    Biligrab will export a m3u8 instead of downloading any video(s).
+    Cannot use sources other than 0 or 1.
     ''')
 
 
 #----------------------------------------------------------------------
 if __name__ == '__main__':
-    is_first_run, is_export, danmaku_only, IS_SLIENT = 0, 0, 0, 0
+    is_first_run, is_export, danmaku_only, IS_SLIENT, IS_M3U = 0, 1, 0, 0, 0
     argv_list = []
     argv_list = sys.argv[1:]
     p_raw, vid, oversea, cookiepath, download_software, concat_software, probe_software, vid_raw = '', '', '', '', '', '', '', ''
     convert_ass = convert_ass_py2
     try:
-        opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:l:e:b:m:n:",
-                                   ['help', "av", 'part', 'source', 'cookie', 'download', 'concat', 'log', 'export', 'probe', 'danmaku', 'slient'])
+        opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:l:e:b:m:n:u:",
+                                   ['help', "av", 'part', 'source', 'cookie', 'download', 'concat', 'log', 'export', 'probe', 'danmaku', 'slient', 'm3u'])
     except getopt.GetoptError:
         usage()
         exit()
@@ -906,7 +1039,7 @@ if __name__ == '__main__':
             try:
                 argv_list.remove('-e')
             except:
-                is_export = 0
+                is_export = 1
                 break
         if o in ('-b', '--probe'):
             probe_software = a
@@ -926,6 +1059,12 @@ if __name__ == '__main__':
                 argv_list.remove('-n')
             except:
                 break
+        if o in ('-u', '--m3u'):
+            IS_M3U = int(a)
+            try:
+                argv_list.remove('-u')
+            except:
+                break
     if len(vid_raw) == 0:
         vid_raw = str(raw_input('av'))
         p_raw = str(raw_input('P'))
@@ -939,6 +1078,21 @@ if __name__ == '__main__':
     if len(oversea) == 0:
         oversea = '0'
         print('INFO: Oversea not set, use original API(methon 0).')
+    IS_M3U = check_dependencies_exportm3u(IS_M3U)
+    if IS_M3U == 1 and oversea not in {'0', '1'}:
+        print('FATAL: M3U exporting cannot use source other than 0 or 1!')
+        if IS_SLIENT == 0:
+            input_raw = str(
+                raw_input('Enter "q" to quit, or enter the source you want.'))
+            if input_raw == 'q':
+                exit()
+            elif input_raw in {'0', '1'}:
+                oversea = input_raw
+            else:
+                oversea = '0'
+        else:
+            print('WARNING: M3U exporting cannot use source other than 0 or 1!')
+            oversea == '0'
     concat_software, download_software, probe_software = check_dependencies(download_software, concat_software, probe_software)
     p_list = get_full_p(p_raw)
     av_list = get_full_p(vid_raw)
@@ -956,11 +1110,12 @@ if __name__ == '__main__':
             else:
                 p_list = get_full_p(input_raw)
     cookies = read_cookie(cookiepath)
-    global BILIGRAB_HEADER
+    global BILIGRAB_HEADER, BILIGRAB_UA
     # deal with danmaku2ass's drama / Twice in case someone failed to check dependencies
     is_export, convert_ass = check_dependencies_danmaku2ass(is_export)
     is_export, convert_ass = check_dependencies_danmaku2ass(is_export)
-    BILIGRAB_HEADER = {'User-Agent': 'Biligrab / ' + str(VER) + ' (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache', 'Cookie': cookies[0]}
+    BILIGRAB_UA = 'Biligrab / ' + str(VER) + ' (cnbeining@gmail.com)'
+    BILIGRAB_HEADER = {'User-Agent': BILIGRAB_UA, 'Cache-Control': 'no-cache', 'Pragma': 'no-cache', 'Cookie': cookies[0]}
     if LOG_LEVEL == 1:
         print('!!!!!!!!!!!!!!!!!!!!!!!\nWARNING: This log contains some sensive data. You may want to delete some part of the data before you post it publicly!\n!!!!!!!!!!!!!!!!!!!!!!!')
         print(BILIGRAB_HEADER)
@@ -1020,6 +1175,8 @@ if __name__ == '__main__':
                     probe_software,
                     danmaku_only)
             except DanmakuOnlyException:
+                pass
+            except ExportM3UException:
                 pass
             except Exception as e:
                 print('ERROR: Biligrab failed: %s' % e)

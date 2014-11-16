@@ -15,6 +15,8 @@ Intergrated with Danmaku2ass(https://github.com/m13253/danmaku2ass, GPL v2) by m
 
 Able to export danmaku only.
 
+Or, if you prefer, Biligrab can export a M3U file, with which you can play danmaku without waiting with players like MPlayer, MPC or VLC, etc. 
+
 Usage
 ------
 If you have a Bilibili account, set the cookie with https://github.com/dantmnf/biliupload/blob/master/getcookie.py  will help you to download some of the restricted videos. Also you can do that by hand.
@@ -30,7 +32,7 @@ python biligrab.py
 Or command line mode:
 
 
-    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p) (-m) (-n)
+    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p) (-m) (-n) (-u)
     
     -h: Default: None
         Print this usage file.
@@ -93,7 +95,7 @@ Or command line mode:
     -l: Default: 0
     Dump the log of the output for better debugging.
     
-    -e: Default: 0
+    -e: Default: 1
     Export Danmaku to ASS file.
     Fulfilled with danmaku2ass(https://github.com/m13253/danmaku2ass/tree/py2),
     Author: @m13253, GPLv3 License.
@@ -118,6 +120,11 @@ Or command line mode:
     -n: Default: 0
     Slient Mode.
     Biligrab will not ask any question.
+    
+    -u: Default: 0
+    Export video link to .m3u file, which can be used with MPlayer, mpc, VLC, etc.
+    Biligrab will export a m3u8 instead of downloading any video(s).
+    Cannot use sources other than 0 or 1.
 
 Requirement
 -------
@@ -153,6 +160,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 History
 ----
+0.98: Fix error with special characters in filename; Add export to M3U file to use players like MPlayer, VLC, etc.; Rewrite video URL API logic; Fix error with Danmaku2ASS(main); Error handling with ffprobe
+
 0.97.9: Rewrite URL retrive logic; Divide URL retrive to functions; Change to ```.format()``` style; Add HTML5 API; Directly use Flvcd; Beautify ERROR logging.
 
 0.97.5: Add (auto) download all the pages; Auto PEP-8.
