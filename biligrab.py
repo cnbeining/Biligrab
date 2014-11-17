@@ -9,7 +9,7 @@
 # Copyright (c) 2013-2014
 
 '''
-Biligrab 0.98.1
+Biligrab 0.98.2
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
@@ -48,7 +48,7 @@ cookies, VIDEO_FORMAT = '', ''
 LOG_LEVEL, pages, FFPROBE_USABLE = 0, 0, 0
 APPKEY = '85eb6835b0a1034e'
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = '0.98.1'
+VER = '0.98.2'
 FAKE_HEADER = {
     'User-Agent':
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36',
@@ -410,7 +410,9 @@ def find_video_address_normal_api(cid, header, method, convert_m3u = False):
 #----------------------------------------------------------------------
 def get_video(oversea, convert_m3u = False):
     """str->list
-    A full parser for getting video."""
+    A full parser for getting video.
+    convert_m3u: [(URL, time_in_sec)]
+    else: [url,url]"""
     rawurl = []
     if oversea == '2':
         raw_link = find_video_address_force_original(cid, BILIGRAB_HEADER)
@@ -496,14 +498,18 @@ def getvideosize(url, verbose=False):
             logging.warning('Cancelling getting video size, press Ctrl-C again to terminate.')
             ffprobe_process.terminate()
             return 0, 0
-        width, height, widthxheight = 0, 0, 0
+        width, height, widthxheight, duration = 0, 0, 0, 0
         for stream in dict.get(ffprobe_output, 'streams') or []:
+            if dict.get(stream, 'duration') > duration:
+                duration = dict.get(stream, 'duration')
             if dict.get(stream, 'width')*dict.get(stream, 'height') > widthxheight:
                 width, height = dict.get(stream, 'width'), dict.get(stream, 'height')
-        return [int(width), int(height)]
+        if duration == 0:
+            duration = 1800
+        return [[int(width), int(height)], int(float(duration))+1]
     except Exception as e:
         logorraise(e)
-        return [0, 0]
+        return [[0, 0], 0]
 
 #----------------------------------------------------------------------
 def convert_ass_py3(filename, probe_software, resolution = [0, 0]):
@@ -699,9 +705,18 @@ def main(
         resolution = getvideosize(rawurl[0])
         convert_ass(filename, probe_software, resolution = resolution)
     if IS_M3U == 1:
+        rawurl = []
         #M3U export, then stop
-        rawurl = get_video(oversea, convert_m3u=True)
-        resolution = getvideosize(rawurl[0][0])
+        if oversea in {'0', '1'}:
+            rawurl = get_video(oversea, convert_m3u=True)
+        else:
+            duration_list = []
+            rawurl = get_video(oversea, convert_m3u=False)
+            for url in rawurl:
+                duration_list.append(getvideosize(url)[1])
+            rawurl = map(lambda x,y: (x, y), rawurl, duration_list)
+        resolution = getvideosize(rawurl[0][0])[0]
+        
         m3u_file = make_m3u8(rawurl)
         f = open(filename + '.m3u', 'w')
         cwd = os.getcwd()
@@ -959,7 +974,7 @@ def usage():
     -u: Default: 0
     Export video link to .m3u file, which can be used with MPlayer, mpc, VLC, etc.
     Biligrab will export a m3u8 instead of downloading any video(s).
-    Cannot use sources other than 0 or 1.
+    Can be broken with sources other than 0 or 1.
     
     -t: Default: None
     The number of Mylist.
@@ -1087,19 +1102,15 @@ if __name__ == '__main__':
         print('INFO: Oversea not set, use original API(methon 0).')
     IS_M3U = check_dependencies_exportm3u(IS_M3U)
     if IS_M3U == 1 and oversea not in {'0', '1'}:
-        print('FATAL: M3U exporting cannot use source other than 0 or 1!')
+        # See issue #8
+        print('WARNING: M3U exporting with source other than 0 or 1 can be broken, and lead to wrong duration!')
         if IS_SLIENT == 0:
             input_raw = str(
                 raw_input('Enter "q" to quit, or enter the source you want.'))
             if input_raw == 'q':
                 exit()
-            elif input_raw in {'0', '1'}:
-                oversea = input_raw
             else:
-                oversea = '0'
-        else:
-            print('WARNING: M3U exporting cannot use source other than 0 or 1!')
-            oversea == '0'
+                oversea = input_raw
     concat_software, download_software, probe_software = check_dependencies(download_software, concat_software, probe_software)
     p_list = get_full_p(p_raw)
     if len(av_list) > 1 and len(p_list) > 1:

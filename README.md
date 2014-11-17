@@ -126,7 +126,7 @@ Or command line mode:
     -u: Default: 0
     Export video link to .m3u file, which can be used with MPlayer, mpc, VLC, etc.
     Biligrab will export a m3u8 instead of downloading any video(s).
-    Cannot use sources other than 0 or 1.
+    Can be broken with sources other than 0 or 1.
     
     -t: Default: None
     The number of Mylist.
@@ -166,6 +166,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 History
 ----
+0.98.2: Add **some** support of M3U export of non-Sina source.
+
 0.98.1: Add mylist download.
 
 0.98: Fix error with special characters in filename; Add export to M3U file to use players like MPlayer, VLC, etc.; Rewrite video URL API logic; Fix error with Danmaku2ASS(main); Error handling with ffprobe
