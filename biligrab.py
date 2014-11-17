@@ -9,7 +9,7 @@
 # Copyright (c) 2013-2014
 
 '''
-Biligrab 0.98.25
+Biligrab 0.98.26
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
@@ -48,7 +48,7 @@ cookies, VIDEO_FORMAT = '', ''
 LOG_LEVEL, pages, FFPROBE_USABLE = 0, 0, 0
 APPKEY = '85eb6835b0a1034e'
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = '0.98.25'
+VER = '0.98.26'
 FAKE_HEADER = {
     'User-Agent':
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36',
@@ -496,7 +496,7 @@ def get_url_size(url):
 def getvideosize(url, verbose=False):
     try:
         if url.startswith('http:') or url.startswith('https:'):
-            ffprobe_command = ['ffprobe', '-icy', '0', '-loglevel', 'repeat+warning' if verbose else 'repeat+error', '-print_format', 'json', '-show_streams', '-timeout', '60000000', '-user-agent', BILIGRAB_UA, url]
+            ffprobe_command = ['ffprobe', '-icy', '0', '-loglevel', 'repeat+warning' if verbose else 'repeat+error', '-print_format', 'json', '-show_format', '-show_streams', '-timeout', '60000000', '-user-agent', BILIGRAB_UA, url]
         else:
             ffprobe_command = ['ffprobe', '-loglevel', 'repeat+warning' if verbose else 'repeat+error', '-print_format', 'json', '-select_streams', 'v', '-show_streams', url]
         logcommand(ffprobe_command)
@@ -516,6 +516,12 @@ def getvideosize(url, verbose=False):
                     width, height = dict.get(stream, 'width'), dict.get(stream, 'height')
                 if dict.get(stream, 'bit_rate') > total_bitrate:
                     total_bitrate += int(dict.get(stream, 'bit_rate'))
+            except:
+                pass
+        if duration == 0:
+            try:
+                if dict.get(ffprobe_output, 'format')['duration'] > duration:
+                    duration = dict.get(ffprobe_output, 'format')['duration']
             except:
                 pass
         if duration == 0:
