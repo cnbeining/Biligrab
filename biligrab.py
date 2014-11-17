@@ -488,7 +488,7 @@ def get_url_size(url):
     """str->int
     Get remote URL size by reading Content-Length.
     In bytes."""
-    site = urllib.urlopen(link)
+    site = urllib.urlopen(url)
     meta = site.info()
     return int(meta.getheaders("Content-Length")[0])
 
@@ -729,8 +729,8 @@ def main(
             for url in rawurl:
                 duration_list.append(getvideosize(url)[1])
             rawurl = map(lambda x,y: (x, y), rawurl, duration_list)
+        print(rawurl)
         resolution = getvideosize(rawurl[0][0])[0]
-        
         m3u_file = make_m3u8(rawurl)
         f = open(filename + '.m3u', 'w')
         cwd = os.getcwd()
