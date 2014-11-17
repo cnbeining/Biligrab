@@ -7,26 +7,9 @@
 # Biligrab is licensed under MIT licence
 # 
 # Copyright (c) 2013-2014
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the “Software”), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+
 '''
-Biligrab 0.98
+Biligrab 0.98.1
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
@@ -40,7 +23,6 @@ from StringIO import StringIO
 import gzip
 import urllib
 import urllib2
-import sys
 import math
 import json
 import commands
@@ -57,8 +39,6 @@ try:
 except:
     pass
 
-
-
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
@@ -68,7 +48,7 @@ cookies, VIDEO_FORMAT = '', ''
 LOG_LEVEL, pages, FFPROBE_USABLE = 0, 0, 0
 APPKEY = '85eb6835b0a1034e'
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = '0.98'
+VER = '0.98.1'
 FAKE_HEADER = {
     'User-Agent':
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36',
@@ -120,6 +100,18 @@ def clean_name(name):
     """str->str
     delete all the dramas in the filename."""
     return (str(name).strip().replace('\\',' ').replace('/', ' ').replace('&', ' ')).replace('-', ' ')
+
+#----------------------------------------------------------------------
+def mylist_to_aid_list(mylist):
+    """str/int->list"""
+    request = urllib2.Request('http://www.bilibili.com/mylist/mylist-{mylist}.js'.format(mylist = mylist), headers = FAKE_HEADER)
+    response = urllib2.urlopen(request)
+    aid_list = []
+    data = response.read()
+    for i in data.split('\n')[-3].split(','):
+        if 'aid' in i:
+            aid_list.append(i.split(':')[1])
+    return aid_list
 
 #----------------------------------------------------------------------
 def find_cid_api(vid, p, cookies):
@@ -875,7 +867,7 @@ def usage():
     
     Usage:
     
-    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p) (-m) (-n) (-u)
+    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p) (-m) (-n) (-u) (-t)
     
     -h: Default: None
         Print this usage file.
@@ -968,19 +960,23 @@ def usage():
     Export video link to .m3u file, which can be used with MPlayer, mpc, VLC, etc.
     Biligrab will export a m3u8 instead of downloading any video(s).
     Cannot use sources other than 0 or 1.
+    
+    -t: Default: None
+    The number of Mylist.
+    Biligrab will process all the videos in this list.
     ''')
 
 
 #----------------------------------------------------------------------
 if __name__ == '__main__':
-    is_first_run, is_export, danmaku_only, IS_SLIENT, IS_M3U = 0, 1, 0, 0, 0
+    is_first_run, is_export, danmaku_only, IS_SLIENT, IS_M3U, mylist = 0, 1, 0, 0, 0, 0
     argv_list = []
     argv_list = sys.argv[1:]
     p_raw, vid, oversea, cookiepath, download_software, concat_software, probe_software, vid_raw = '', '', '', '', '', '', '', ''
     convert_ass = convert_ass_py2
     try:
-        opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:l:e:b:m:n:u:",
-                                   ['help', "av", 'part', 'source', 'cookie', 'download', 'concat', 'log', 'export', 'probe', 'danmaku', 'slient', 'm3u'])
+        opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:l:e:b:m:n:u:t:",
+                                   ['help', "av", 'part', 'source', 'cookie', 'download', 'concat', 'log', 'export', 'probe', 'danmaku', 'slient', 'm3u', 'mylist'])
     except getopt.GetoptError:
         usage()
         exit()
@@ -1065,7 +1061,18 @@ if __name__ == '__main__':
                 argv_list.remove('-u')
             except:
                 break
-    if len(vid_raw) == 0:
+        if o in ('-t', '--mylist'):
+            mylist = a
+            try:
+                argv_list.remove('-t')
+            except:
+                break
+    av_list = get_full_p(vid_raw)
+    if mylist != 0:
+        av_list += mylist_to_aid_list(mylist)
+    if LOG_LEVEL == 1:
+        print(av_list)
+    if len(av_list) == 0:
         vid_raw = str(raw_input('av'))
         p_raw = str(raw_input('P'))
         oversea = str(raw_input('Source?'))
@@ -1095,7 +1102,6 @@ if __name__ == '__main__':
             oversea == '0'
     concat_software, download_software, probe_software = check_dependencies(download_software, concat_software, probe_software)
     p_list = get_full_p(p_raw)
-    av_list = get_full_p(vid_raw)
     if len(av_list) > 1 and len(p_list) > 1:
         print('WARNING: You are downloading multi parts from multiple videos! This may result in unpredictable outputs!')
         if IS_SLIENT == 0:

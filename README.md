@@ -11,6 +11,8 @@ Auto concat and convert to MP4 (or FLV, even nothing, if not possible) file(s), 
 
 Interact and command line mode for different situations. ALso support slient mode.
 
+Able to process single or multiple videos with easy grammar, or reading mylist.
+
 Intergrated with Danmaku2ass(https://github.com/m13253/danmaku2ass, GPL v2) by m13253, able to convert danmaku to ASS subtitle. Both py2 and master branch avalable for better handling danmaku.
 
 Able to export danmaku only.
@@ -32,7 +34,7 @@ python biligrab.py
 Or command line mode:
 
 
-    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p) (-m) (-n) (-u)
+    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p) (-m) (-n) (-u) (-t)
     
     -h: Default: None
         Print this usage file.
@@ -125,6 +127,10 @@ Or command line mode:
     Export video link to .m3u file, which can be used with MPlayer, mpc, VLC, etc.
     Biligrab will export a m3u8 instead of downloading any video(s).
     Cannot use sources other than 0 or 1.
+    
+    -t: Default: None
+    The number of Mylist.
+    Biligrab will process all the videos in this list.
 
 Requirement
 -------
@@ -160,6 +166,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 History
 ----
+0.98.1: Add mylist download.
+
 0.98: Fix error with special characters in filename; Add export to M3U file to use players like MPlayer, VLC, etc.; Rewrite video URL API logic; Fix error with Danmaku2ASS(main); Error handling with ffprobe
 
 0.97.9: Rewrite URL retrive logic; Divide URL retrive to functions; Change to ```.format()``` style; Add HTML5 API; Directly use Flvcd; Beautify ERROR logging.
