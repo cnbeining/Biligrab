@@ -126,7 +126,7 @@ Or command line mode:
     -u: Default: 0
     Export video link to .m3u file, which can be used with MPlayer, mpc, VLC, etc.
     Biligrab will export a m3u8 instead of downloading any video(s).
-    Can be broken with sources other than 0 or 1.
+    Can be somewhere broken with sources other than 0 or 1.
     
     -t: Default: None
     The number of Mylist.
@@ -166,6 +166,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 History
 ----
+0.98.25: Add **some** support of M3U export of Sina source and source that was broken.
+
 0.98.2: Add **some** support of M3U export of non-Sina source.
 
 0.98.1: Add mylist download.
