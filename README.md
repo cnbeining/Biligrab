@@ -166,6 +166,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 History
 ----
+0.98.27: Update as #7.
+
 0.98.26: Add more support of broken sources.
 
 0.98.25: Add **some** support of M3U export of Sina source and source that was broken.
