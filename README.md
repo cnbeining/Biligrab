@@ -166,6 +166,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 History
 ----
+0.98.28: Fix typo; Fix error with CLI mode.
+
 0.98.27: Update as #7.
 
 0.98.26: Add more support of broken sources.

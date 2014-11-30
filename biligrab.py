@@ -4,17 +4,17 @@
 # Purpose: Yet another danmaku and video file downloader of Bilibili.
 # Created: 11/06/2013
 # 
-# Biligrab is licensed under MIT licence
+# Biligrab is licensed under MIT license
 # 
 # Copyright (c) 2013-2014
 
 '''
-Biligrab 0.98.27
+Biligrab 0.98.28
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
 https://github.com/cnbeining/Biligrab
-MIT licence
+MIT license
 '''
 
 import sys
@@ -48,7 +48,7 @@ cookies, VIDEO_FORMAT = '', ''
 LOG_LEVEL, pages, FFPROBE_USABLE = 0, 0, 0
 APPKEY = '85eb6835b0a1034e'
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = '0.98.27'
+VER = '0.98.28'
 FAKE_HEADER = {
     'User-Agent':
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36',
@@ -905,7 +905,7 @@ def usage():
     
     -h: Default: None
         Print this usage file.
-        a
+        
     -a: Default: None
         The av number.
         If not set, Biligrab will use the falloff interact mode.
@@ -1004,7 +1004,7 @@ def usage():
 #----------------------------------------------------------------------
 if __name__ == '__main__':
     is_first_run, is_export, danmaku_only, IS_SLIENT, IS_M3U, mylist = 0, 1, 0, 0, 0, 0
-    argv_list = []
+    argv_list,av_list = [], []
     argv_list = sys.argv[1:]
     p_raw, vid, oversea, cookiepath, download_software, concat_software, probe_software, vid_raw = '', '', '', '', '', '', '', ''
     convert_ass = convert_ass_py2
@@ -1101,16 +1101,16 @@ if __name__ == '__main__':
                 argv_list.remove('-t')
             except:
                 break
+    if len(vid_raw) == 0:
+        vid_raw = str(raw_input('av'))
+        p_raw = str(raw_input('P'))
+        oversea = str(raw_input('Source?'))
+        cookiepath = './bilicookies'
     av_list = get_full_p(vid_raw)
     if mylist != 0:
         av_list += mylist_to_aid_list(mylist)
     if LOG_LEVEL == 1:
         print(av_list)
-    if len(av_list) == 0:
-        vid_raw = str(raw_input('av'))
-        p_raw = str(raw_input('P'))
-        oversea = str(raw_input('Source?'))
-        cookiepath = './bilicookies'
     if len(cookiepath) == 0:
         cookiepath = './bilicookies'
     if len(p_raw) == 0:
@@ -1122,10 +1122,9 @@ if __name__ == '__main__':
     IS_M3U = check_dependencies_exportm3u(IS_M3U)
     if IS_M3U == 1 and oversea not in {'0', '1'}:
         # See issue #8
-        print('WARNING: M3U exporting with source other than 0 or 1 can be broken, and lead to wrong duration!')
+        print('INFO: M3U exporting with source other than 0 or 1 can be broken, and lead to wrong duration!')
         if IS_SLIENT == 0:
-            input_raw = str(
-                raw_input('Enter "q" to quit, or enter the source you want.'))
+            input_raw = str(raw_input('Enter "q" to quit, or enter the source you want.'))
             if input_raw == 'q':
                 exit()
             else:
