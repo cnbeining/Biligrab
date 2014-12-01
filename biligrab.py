@@ -392,7 +392,7 @@ def find_video_address_normal_api(cid, header, method, convert_m3u = False):
     for l in data.split('\n'):  # In case shit happens
         if 'error.mp4' in l:
             logging.warning('API header may be blocked!')
-            return []
+            return ['API_BLOCKED']
     rawurl = []
     originalurl = ''
     dom = parseString(data)
