@@ -166,6 +166,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 History
 ----
+0.98.3: Change default probe software to ffprobe; Fix error at resolution with danmaku export only; Better debugging output; Fix error with danmaku2ass(py2)'s float problem; Beautify code.
+
 0.98.29: Add ver. number: Fix: do not fail to fake UA when use normal api #9, thanks to @arition 's help.
 
 0.98.28: Fix typo; Fix error with CLI mode.

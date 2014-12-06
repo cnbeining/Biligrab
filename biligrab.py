@@ -9,7 +9,7 @@
 # Copyright (c) 2013-2014
 
 '''
-Biligrab 0.98.29
+Biligrab 0.98.3
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
@@ -30,6 +30,7 @@ import subprocess
 import hashlib
 import getopt
 import logging
+import traceback
 
 from xml.dom.minidom import parse, parseString
 import xml.dom.minidom
@@ -48,7 +49,7 @@ cookies, VIDEO_FORMAT = '', ''
 LOG_LEVEL, pages, FFPROBE_USABLE = 0, 0, 0
 APPKEY = '85eb6835b0a1034e'
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = '0.98.28'
+VER = '0.98.3'
 FAKE_HEADER = {
     'User-Agent':
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36',
@@ -197,7 +198,7 @@ def check_dependencies(download_software, concat_software, probe_software):
     The detection of Python3 is located at the end of Main function."""
     concat_software_list = ['ffmpeg', 'avconv']
     download_software_list = ['aria2c', 'axel', 'wget', 'curl']
-    probe_software_list = ['mediainfo', 'ffprobe']
+    probe_software_list = ['ffprobe', 'mediainfo']
     name_list = [[concat_software,
                   concat_software_list],
                  [download_software,
@@ -208,8 +209,7 @@ def check_dependencies(download_software, concat_software, probe_software):
         if name[0].strip().lower() not in name[1]:  # Unsupported software
             # Set a Unsupported software,  not blank
             if len(name[0].strip()) != 0:
-                print('WARNING: Requested Software not supported!\n         Biligrab only support these following software(s):\n         ' +
-                      str(name[1]) + '\n         Trying to find available one...')
+                print('WARNING: Requested Software not supported!\n         Biligrab only support these following software(s):\n         ' + str(name[1]) + '\n         Trying to find available one...')
             for software in name[1]:
                 output = commands.getstatusoutput(software + ' --help')
                 if str(output[0]) != '32512':  # If exist
@@ -566,15 +566,18 @@ def convert_ass_py2(filename, probe_software, resolution = [0, 0]):
     if resolution == [0, 0]:
         print('INFO: Trying to get resolution...')
         resolution = get_resolution(filename, probe_software)
-    print('INFO: Resolution is %dx%d' % (resolution[0], resolution[1]))
+    print('INFO: Resolution is {width}x{height}'.format(width = resolution[0], height = resolution[1]))
     #convert_ass(xml_name, filename + '.ass', resolution)
     try:
         Danmaku2ASS(xml_name, filename + '.ass', resolution[0], resolution[1],
-                    font_size=int(math.ceil(resolution[1] / 21.6)), text_opacity=0.8, comment_duration=8.0)
+                    font_size = int(math.ceil(resolution[1] / 21.6)), text_opacity=0.8, comment_duration=8.0)
         print('INFO: The ASS file should be ready!')
     except Exception as e:
         print('ERROR: Danmaku2ASS failed: %s' % e)
         print('       Head to https://github.com/m13253/danmaku2ass/issues to complain about this.')
+        if LOG_LEVEL == 1:
+            traceback.print_exc()
+        pass  #Or it may stop leaving lots of lines unprocessed
 
 #----------------------------------------------------------------------
 def download_danmaku(cid, filename):
@@ -583,10 +586,9 @@ def download_danmaku(cid, filename):
     Used to be in main(), but replaced due to the merge of -m (BiligrabLite).
     If danmaku only, will see whether need to export ASS."""
     print('INFO: Fetching XML...')
-    os.system(
-        'curl -o "' + filename +'.xml" --compressed  http://comment.bilibili.com/' + cid + '.xml')
+    os.system('curl -o "{filename}.xml" --compressed  http://comment.bilibili.com/{cid}.xml'.format(filename = filename, cid = cid))
     #os.system('gzip -d '+cid+'.xml.gz')
-    print('INFO: The XML file, ' + filename + '.xml should be ready...enjoy!')
+    print('INFO: The XML file, {filename}.xml should be ready...enjoy!'.format(filename = filename))
 
 #----------------------------------------------------------------------
 def logcommand(command_line):
@@ -597,7 +599,7 @@ def logorraise(message, debug=False):
     if debug:
         raise message
     else:
-        logging.error(str(message))    
+        logging.error(str(message))
 
 ########################################################################
 class DanmakuOnlyException(Exception):
@@ -665,16 +667,7 @@ class ExportM3UException(Exception):
         return repr(self.value)
 
 #----------------------------------------------------------------------
-def main(
-    vid,
-    p, 
-    oversea, 
-    cookies,
-    download_software,
-    concat_software,
-    is_export,
-    probe_software,
-        danmaku_only):
+def main(vid, p, oversea, cookies, download_software, concat_software, is_export, probe_software, danmaku_only):
     global cid, partname, title, videourl, is_first_run
     videourl = 'http://www.bilibili.com/video/av{vid}/index_{p}.html'.format(vid = vid, p = p)
     # Check both software
@@ -721,7 +714,8 @@ def main(
     download_danmaku(cid, filename)
     if is_export >= 1 and IS_M3U != 1 and danmaku_only == 1:
         rawurl = get_video(oversea, convert_m3u=True)
-        resolution = getvideosize(rawurl[0])
+        check_dependencies_remote_resolution('ffprobe')
+        resolution = getvideosize(rawurl[0])[0]
         convert_ass(filename, probe_software, resolution = resolution)
     if IS_M3U == 1:
         rawurl = []
@@ -758,7 +752,7 @@ def main(
         rawurl = find_link_flvcd(videourl)
     vid_num = len(rawurl)
     if IS_SLIENT == 0 and vid_num == 0:
-        rawurl = list(str(raw_input('ERROR: Cannot get download URL! If you know the url, please enter it now; URL1|URL2...'))).split('|')
+        rawurl = list(str(raw_input('ERROR: Cannot get download URL! If you know the url, please enter it now: URL1|URL2...'))).split('|')
     vid_num = len(rawurl)
     if vid_num is 0:  # shit really hit the fan
         raise NoVIdeoURLException('FATAL: Cannot get video URL anyway!')
@@ -775,7 +769,7 @@ def main(
             convert_ass(filename, probe_software)
         except:
             print('WARNING: Problem with ASS convertion!')
-            pass    
+            pass
     print('INFO: Part Done!')
 
 #----------------------------------------------------------------------
@@ -804,8 +798,7 @@ def get_full_p(p_raw):
                 elif lower != 0 and higher == 0:
                     higher = lower
                 else:
-                    print(
-                        'WARNING: Cannot find any higher or lower, ignoring...')
+                    print('WARNING: Cannot find any higher or lower, ignoring...')
                     # break
             mid = 0
             if higher < lower:
@@ -821,10 +814,20 @@ def get_full_p(p_raw):
             try:
                 p_list.append(int(item))
             except:
-                print('WARNING: Cannot read "' + str(item) + '", abondon it.')
+                print('WARNING: Cannot read "{item}", abondon it.'.format(item = item))
                 # break
     p_list = list_del_repeat(p_list)
     return p_list
+
+#----------------------------------------------------------------------
+def check_dependencies_remote_resolution(software):
+    """"""
+    if 'ffprobe' in software:
+        output = commands.getstatusoutput('ffprobe --help')
+        if str(output[0]) == '32512':
+            FFPROBE_USABLE = 0
+        else:
+            FFPROBE_USABLE = 1
 
 #----------------------------------------------------------------------
 def check_dependencies_exportm3u(IS_M3U):
@@ -954,7 +957,7 @@ def usage():
     For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
     
     -v: Default:None
-    Set the desired download software.
+    Set the desired concatenate software.
     Biligrab supports ffmpeg by far.
     If not set, Biligrab will detect an avalable one;
     If none of those is avalable, Biligrab will quit.
@@ -1155,9 +1158,7 @@ if __name__ == '__main__':
         print('!!!!!!!!!!!!!!!!!!!!!!!\nWARNING: This log contains some sensive data. You may want to delete some part of the data before you post it publicly!\n!!!!!!!!!!!!!!!!!!!!!!!')
         print(BILIGRAB_HEADER)
         try:
-            request = urllib2.Request(
-                'http://ipinfo.io/json',
-                headers=FAKE_HEADER)
+            request = urllib2.Request('http://ipinfo.io/json', headers=FAKE_HEADER)
             response = urllib2.urlopen(request)
             data = response.read()
             print('INFO: Dumping info...')
@@ -1199,16 +1200,7 @@ if __name__ == '__main__':
             part_now = str(p)
             try:
                 print('INFO: Downloading part ' + str(p) + ' ...')
-                main(
-                    vid,
-                    p,
-                    oversea,
-                    cookies,
-                    download_software,
-                    concat_software,
-                    is_export,
-                    probe_software,
-                    danmaku_only)
+                main(vid, p, oversea,cookies, download_software, concat_software, is_export, probe_software, danmaku_only)
             except DanmakuOnlyException:
                 pass
             except ExportM3UException:
@@ -1217,4 +1209,6 @@ if __name__ == '__main__':
                 print('ERROR: Biligrab failed: %s' % e)
                 print('       If you think this should not happen, please dump your log using "-l", and open a issue ar https://github.com/cnbeining/Biligrab/issues .')
                 print('       Make sure you delete all the sensive data before you post it publicly.')
+                if LOG_LEVEL == 1:
+                    traceback.print_exc()
     exit()
