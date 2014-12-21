@@ -9,7 +9,7 @@
 # Copyright (c) 2013-2014
 
 '''
-Biligrab 0.98.3
+Biligrab 0.98.31
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
@@ -49,7 +49,7 @@ cookies, VIDEO_FORMAT = '', ''
 LOG_LEVEL, pages, FFPROBE_USABLE = 0, 0, 0
 APPKEY = '85eb6835b0a1034e'
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = '0.98.3'
+VER = '0.98.31'
 FAKE_HEADER = {
     'User-Agent':
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36',
@@ -548,7 +548,7 @@ def convert_ass_py3(filename, probe_software, resolution = [0, 0]):
         print('INFO: Trying to get resolution...')
         resolution = get_resolution(filename, probe_software)
     print('INFO: Resolution is %dx%d' % (resolution[0], resolution[1]))
-    if os.system('python3 %s/danmaku2ass3.py -o %s -s %dx%d -fs %d -a 0.8 -l 8 %s' % (LOCATION_DIR, ass_name, resolution[0], resolution[1], int(math.ceil(resolution[1] / 21.6)), xml_name)) == 0:
+    if os.system('python3 %s/danmaku2ass3.py -o %s -s %dx%d -fs %d -a 0.8 -dm 8 %s' % (LOCATION_DIR, ass_name, resolution[0], resolution[1], int(math.ceil(resolution[1] / 21.6)), xml_name)) == 0:
         print('INFO: The ASS file should be ready!')
     else:
         print('ERROR: Danmaku2ASS failed.')
@@ -570,7 +570,7 @@ def convert_ass_py2(filename, probe_software, resolution = [0, 0]):
     #convert_ass(xml_name, filename + '.ass', resolution)
     try:
         Danmaku2ASS(xml_name, filename + '.ass', resolution[0], resolution[1],
-                    font_size = int(math.ceil(resolution[1] / 21.6)), text_opacity=0.8, comment_duration=8.0)
+                    font_size = int(math.ceil(resolution[1] / 21.6)), text_opacity=0.8, duration_marquee=8.0)
         print('INFO: The ASS file should be ready!')
     except Exception as e:
         print('ERROR: Danmaku2ASS failed: %s' % e)
