@@ -49,10 +49,9 @@ cookies, VIDEO_FORMAT = '', ''
 LOG_LEVEL, pages, FFPROBE_USABLE = 0, 0, 0
 APPKEY = '85eb6835b0a1034e'
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = '0.98.39'
+VER = '0.98.4'
 FAKE_HEADER = {
-    'User-Agent':
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36',
+    'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.16 Safari/537.36',
     'Cache-Control': 'no-cache',
     'Pragma': 'no-cache', 
     'pianhao': '%7B%22qing%22%3A%22super%22%2C%22qtudou%22%3A%22null%22%2C%22qyouku%22%3A%22null%22%2C%22q56%22%3A%22null%22%2C%22qcntv%22%3A%22null%22%2C%22qletv%22%3A%22null%22%2C%22qqiyi%22%3A%22null%22%2C%22qsohu%22%3A%22null%22%2C%22qqq%22%3A%22null%22%2C%22qhunantv%22%3A%22null%22%2C%22qku6%22%3A%22null%22%2C%22qyinyuetai%22%3A%22null%22%2C%22qtangdou%22%3A%22null%22%2C%22qxunlei%22%3A%22null%22%2C%22qsina%22%3A%22null%22%2C%22qpptv%22%3A%22null%22%2C%22qpps%22%3A%22null%22%2C%22qm1905%22%3A%22null%22%2C%22qbokecc%22%3A%22null%22%2C%22q17173%22%3A%22null%22%2C%22qcuctv%22%3A%22null%22%2C%22q163%22%3A%22null%22%2C%22xia%22%3A%22auto%22%2C%22pop%22%3A%22no%22%2C%22open%22%3A%22no%22%7D'}
@@ -65,6 +64,19 @@ def list_del_repeat(list):
     l2 = []
     [l2.append(i) for i in list if not i in l2]
     return(l2)
+
+#----------------------------------------------------------------------
+def logging_level_reader(LOG_LEVEL):
+    """str->int
+    Logging level."""
+    if 'INFO' in LOG_LEVEL:
+        return logging.INFO
+    elif 'DEBUG' in LOG_LEVEL:
+        return logging.DEBUG
+    elif 'WARNING' in LOG_LEVEL:
+        return logging.WARNING
+    elif 'FATAL' in LOG_LEVEL:
+        return logging.FATAL
 
 #----------------------------------------------------------------------
 def calc_sign(string):
@@ -303,7 +315,7 @@ def find_video_address_html5(vid, p, header):
     raw_url = info['src']
     if 'error.mp4' in raw_url:
         logging.error('HTML5 API returned ERROR or not avalable!')
-        return []
+        return []  #As in #11
     if 'm3u8' in raw_url:
         logging.info('Found m3u8, processing...')
         return process_m3u8(raw_url)
@@ -315,9 +327,9 @@ def find_video_address_force_original(cid, header):
     Give the original URL, if possible.
     Method #2."""
         # Force get oriurl
-    sign_this = calc_sign('appkey={APPKEY}&cid={cid}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY))
+    sign_this = calc_sign('appkey={APPKEY}&cid={cid}&quality=4{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY))
     api_url = 'http://interface.bilibili.com/player?'
-    request = urllib2.Request(api_url + 'appkey={APPKEY}&cid={cid}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this), headers=header)
+    request = urllib2.Request(api_url + 'appkey={APPKEY}&cid={cid}&quality=5&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this), headers=header)
     response = urllib2.urlopen(request)
     data = response.read()
     logging.debug('interface responce: ' + data)
@@ -361,12 +373,12 @@ def find_video_address_normal_api(cid, header, method, convert_m3u = False):
     4: Flvcd - Divided in another function
      [(VIDEO_URL, TIME_IN_SEC), ...]
     """
-    sign_this = calc_sign('appkey={APPKEY}&cid={cid}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY))
+    sign_this = calc_sign('appkey={APPKEY}&cid={cid}&quality=4{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY))
     if method == '1':
         api_url = 'http://interface.bilibili.com/v_cdn_play?'
     else:  #Method 0 or other
         api_url = 'http://interface.bilibili.com/playurl?'
-    request = urllib2.Request(api_url + 'appkey={APPKEY}&cid={cid}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this), headers=header)
+    request = urllib2.Request(api_url + 'appkey={APPKEY}&cid={cid}&quality=4&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this), headers=header)
     response = urllib2.urlopen(request)
     data = response.read()
     logging.debug('interface API: ' + data)
@@ -400,6 +412,8 @@ def get_video(oversea, convert_m3u = False):
         rawurl = find_link_flvcd(raw_link)
     elif oversea == '3':
         rawurl = find_video_address_html5(vid, p, BILIGRAB_HEADER)
+        if rawurl == []:  #As in #11
+            rawurl = find_video_address_html5(vid, p, BILIGRAB_HEADER)
     elif oversea == '4':
         rawurl = find_link_flvcd(videourl)
     else:
@@ -651,8 +665,7 @@ def main(vid, p, oversea, cookies, download_software, concat_software, is_export
     if cid is 0:
         if IS_SLIENT == 0:
             logging.warning('Strange, still cannot find cid... ')
-            is_black3 = str(
-                raw_input('Type y for trying the unpredictable way, or input the cid by yourself; Press ENTER to quit.'))
+            is_black3 = str(raw_input('Type y for trying the unpredictable way, or input the cid by yourself; Press ENTER to quit.'))
         else:
             is_black3 = 'y'
         if 'y' in str(is_black3):
@@ -685,7 +698,7 @@ def main(vid, p, oversea, cookies, download_software, concat_software, is_export
     # Download Danmaku
     download_danmaku(cid, filename)
     if is_export >= 1 and IS_M3U != 1 and danmaku_only == 1:
-        rawurl = get_video(oversea, convert_m3u=True)
+        rawurl = get_video(oversea, convert_m3u = True)
         check_dependencies_remote_resolution('ffprobe')
         resolution = getvideosize(rawurl[0])[0]
         convert_ass(filename, probe_software, resolution = resolution)
@@ -693,10 +706,10 @@ def main(vid, p, oversea, cookies, download_software, concat_software, is_export
         rawurl = []
         #M3U export, then stop
         if oversea in {'0', '1'}:
-            rawurl = get_video(oversea, convert_m3u=True)
+            rawurl = get_video(oversea, convert_m3u = True)
         else:
             duration_list = []
-            rawurl = get_video(oversea, convert_m3u=False)
+            rawurl = get_video(oversea, convert_m3u = False)
             for url in rawurl:
                 duration_list.append(getvideosize(url)[1])
             rawurl = map(lambda x,y: (x, y), rawurl, duration_list)
@@ -719,10 +732,8 @@ def main(vid, p, oversea, cookies, download_software, concat_software, is_export
         # flvcd
     url_flag = 1
     rawurl = []
-    while url_flag < int(time_fetch) and rawurl == []:
-        logging.info('Trying to get download URL, time #{time_fetch}'.format(time_fetch = url_flag))
-        rawurl = get_video(oversea)
-        url_flag += 1
+    logging.info('Trying to get download URL...')
+    rawurl = get_video(oversea, convert_m3u = False)
     if len(rawurl) == 0 and oversea != '4':  # hope this never happen
         logging.warning('API failed, using falloff plan...')
         rawurl = find_link_flvcd(videourl)
@@ -918,8 +929,10 @@ def usage():
     If the API is blocked, Biligrab would fake the UA.
     3: (Not stable) Use the HTML5 API.
        This works for downloading some cached Letvcloud videos, but is slow, and would fail for no reason sometimes.
+       Will retry if unavalable.
     4: Use Flvcd.
        Good to fight with oversea and copyright restriction, but not working with iQiyi.
+       May retrive better quality video, especially for Youku.
        
     -c: Default: ./bilicookies
     The path of cookies.
@@ -978,23 +991,7 @@ def usage():
     -t: Default: None
     The number of Mylist.
     Biligrab will process all the videos in this list.
-    
-    -r: Default: 5
-    The time Biligrab will retry before announcing failure when fetching download url.
     ''')
-
-
-#----------------------------------------------------------------------
-def logging_level_reader(LOG_LEVEL):
-    """"""
-    if 'INFO' in LOG_LEVEL:
-        return logging.INFO
-    elif 'DEBUG' in LOG_LEVEL:
-        return logging.DEBUG
-    elif 'WARNING' in LOG_LEVEL:
-        return logging.WARNING
-    elif 'FATAL' in LOG_LEVEL:
-        return logging.FATAL
 
 #----------------------------------------------------------------------
 if __name__ == '__main__':
@@ -1004,8 +1001,8 @@ if __name__ == '__main__':
     p_raw, vid, oversea, cookiepath, download_software, concat_software, probe_software, vid_raw, LOG_LEVEL = '', '', '', '', '', '', '', '', 'INFO'
     convert_ass = convert_ass_py2
     try:
-        opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:l:e:b:m:n:u:t:r:",
-                                   ['help', "av=", 'part=', 'source=', 'cookie=', 'download=', 'concat=', 'log=', 'export=', 'probe=', 'danmaku=', 'slient=', 'm3u=', 'mylist=', 'retry='])
+        opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:l:e:b:m:n:u:t:",
+                                   ['help', "av=", 'part=', 'source=', 'cookie=', 'download=', 'concat=', 'log=', 'export=', 'probe=', 'danmaku=', 'slient=', 'm3u=', 'mylist='])
     except getopt.GetoptError:
         usage()
         exit()
@@ -1045,15 +1042,12 @@ if __name__ == '__main__':
             IS_M3U = int(a)
         if o in ('-t', '--mylist'):
             mylist = a
-        if o in ('-r', '--retry'):
-            time_fetch = int(a)
     if len(vid_raw) == 0:
         vid_raw = str(raw_input('av'))
         p_raw = str(raw_input('P'))
         oversea = str(raw_input('Source?'))
         cookiepath = './bilicookies'
     logging.basicConfig(level = logging_level_reader(LOG_LEVEL))
-    
     av_list = get_full_p(vid_raw)
     if mylist != 0:
         av_list += mylist_to_aid_list(mylist)

@@ -169,6 +169,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 History
 ----
+0.98.4: Change UA, change to use best source, rewrite HTML5 API as in #11.
+
 0.98.39: Change to download high quality Youku video, rewrite the error report and logging, retry if failed to fetch video, rewrite arguments.
 
 0.98.3: Change default probe software to ffprobe; Fix error at resolution with danmaku export only; Better debugging output; Fix error with danmaku2ass(py2)'s float problem; Beautify code.
