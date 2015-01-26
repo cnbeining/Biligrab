@@ -33,12 +33,11 @@ python biligrab.py
 
 Or command line mode:
 
-
-    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p) (-m) (-n) (-u) (-t)
+    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p) (-m) (-n) (-u) (-t) (-r)
     
     -h: Default: None
         Print this usage file.
-        a
+        
     -a: Default: None
         The av number.
         If not set, Biligrab will use the falloff interact mode.
@@ -87,15 +86,16 @@ Or command line mode:
     For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
     
     -v: Default:None
-    Set the desired download software.
+    Set the desired concatenate software.
     Biligrab supports ffmpeg by far.
     If not set, Biligrab will detect an avalable one;
     If none of those is avalable, Biligrab will quit.
     For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
     Make sure you include a *working* command line example of this software!
     
-    -l: Default: 0
+    -l: Default: INFO
     Dump the log of the output for better debugging.
+    Can be set to debug.
     
     -e: Default: 1
     Export Danmaku to ASS file.
@@ -126,11 +126,14 @@ Or command line mode:
     -u: Default: 0
     Export video link to .m3u file, which can be used with MPlayer, mpc, VLC, etc.
     Biligrab will export a m3u8 instead of downloading any video(s).
-    Can be somewhere broken with sources other than 0 or 1.
+    Can be broken with sources other than 0 or 1.
     
     -t: Default: None
     The number of Mylist.
     Biligrab will process all the videos in this list.
+    
+    -r: Default: 5
+    The time Biligrab will retry before announcing failure when fetching download url.
 
 Requirement
 -------
@@ -166,6 +169,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 History
 ----
+0.98.39: Change to download high quality Youku video, rewrite the error report and logging, retry if failed to fetch video, rewrite arguments.
+
 0.98.3: Change default probe software to ffprobe; Fix error at resolution with danmaku export only; Better debugging output; Fix error with danmaku2ass(py2)'s float problem; Beautify code.
 
 0.98.29: Add ver. number: Fix: do not fail to fake UA when use normal api #9, thanks to @arition 's help.
