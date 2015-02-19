@@ -19,6 +19,8 @@ Able to export danmaku only.
 
 Or, if you prefer, Biligrab can export a M3U file, with which you can play danmaku without waiting with players like MPlayer, MPC or VLC, etc. 
 
+Comes with a built-in multi-part download, useful to reduce slow overheads.
+
 Usage
 ------
 If you have a Bilibili account, set the cookie with https://github.com/dantmnf/biliupload/blob/master/getcookie.py  will help you to download some of the restricted videos. Also you can do that by hand.
@@ -27,13 +29,13 @@ The file should looks like:
 
     DedeUserID=123456;DedeUserID__ckMd5=****************;SESSDATA=*******************
 
-Interactive mode (Note most of the functions are not avalable via this mode):
+Interactive mode (Note some of the functions are not avalable via this mode):
 
 python biligrab.py
 
 Or command line mode:
 
-    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p) (-m) (-n) (-u) (-t) (-r)
+    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-b) (-m) (-n) (-u) (-t) (-r) (-q)
     
     -h: Default: None
         Print this usage file.
@@ -71,8 +73,10 @@ Or command line mode:
     If the API is blocked, Biligrab would fake the UA.
     3: (Not stable) Use the HTML5 API.
        This works for downloading some cached Letvcloud videos, but is slow, and would fail for no reason sometimes.
+       Will retry if unavalable.
     4: Use Flvcd.
        Good to fight with oversea and copyright restriction, but not working with iQiyi.
+       May retrive better quality video, especially for Youku.
        
     -c: Default: ./bilicookies
     The path of cookies.
@@ -108,7 +112,7 @@ Or command line mode:
     a python3 callable via 'python3'.
     If python3 not callable or danmaku2ass2/3 DNE, Biligrab will ask for action.
     
-    -p: Default: None
+    -b: Default: None
     Set the probe software.
     Biligrab supports Mediainfo and FFprobe.
     If not set, Biligrab will detect an avalable one;
@@ -132,8 +136,9 @@ Or command line mode:
     The number of Mylist.
     Biligrab will process all the videos in this list.
     
-    -r: Default: 5
-    The time Biligrab will retry before announcing failure when fetching download url.
+    -q: Default: 3
+    The thread number for downloading.
+    Good to fix overhead problem.
 
 Requirement
 -------
@@ -169,6 +174,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 History
 ----
+0.98.5: Add testing multi-part download, Change UA, Change error handling, Fix #13, #14.
+
 0.98.4: Change UA, change to use best source, rewrite HTML5 API as in #11.
 
 0.98.39: Change to download high quality Youku video, rewrite the error report and logging, retry if failed to fetch video, rewrite arguments.

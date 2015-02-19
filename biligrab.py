@@ -21,6 +21,7 @@ import sys
 import os
 from StringIO import StringIO
 import gzip
+import shutil
 import urllib
 import urllib2
 import math
@@ -31,13 +32,15 @@ import hashlib
 import getopt
 import logging
 import traceback
+import threading
+import Queue
 
 from xml.dom.minidom import parse, parseString
 import xml.dom.minidom
 
 try:
     from danmaku2ass2 import *
-except:
+except Exception:
     pass
 
 reload(sys)
@@ -49,12 +52,12 @@ cookies, VIDEO_FORMAT = '', ''
 LOG_LEVEL, pages, FFPROBE_USABLE = 0, 0, 0
 APPKEY = '85eb6835b0a1034e'
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = '0.98.4'
+VER = '0.98.5'
 FAKE_HEADER = {
     'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.16 Safari/537.36',
     'Cache-Control': 'no-cache',
     'Pragma': 'no-cache', 
-    'pianhao': '%7B%22qing%22%3A%22super%22%2C%22qtudou%22%3A%22null%22%2C%22qyouku%22%3A%22null%22%2C%22q56%22%3A%22null%22%2C%22qcntv%22%3A%22null%22%2C%22qletv%22%3A%22null%22%2C%22qqiyi%22%3A%22null%22%2C%22qsohu%22%3A%22null%22%2C%22qqq%22%3A%22null%22%2C%22qhunantv%22%3A%22null%22%2C%22qku6%22%3A%22null%22%2C%22qyinyuetai%22%3A%22null%22%2C%22qtangdou%22%3A%22null%22%2C%22qxunlei%22%3A%22null%22%2C%22qsina%22%3A%22null%22%2C%22qpptv%22%3A%22null%22%2C%22qpps%22%3A%22null%22%2C%22qm1905%22%3A%22null%22%2C%22qbokecc%22%3A%22null%22%2C%22q17173%22%3A%22null%22%2C%22qcuctv%22%3A%22null%22%2C%22q163%22%3A%22null%22%2C%22xia%22%3A%22auto%22%2C%22pop%22%3A%22no%22%2C%22open%22%3A%22no%22%7D'}
+    'pianhao': '%7B%22qing%22%3A%22super%22%2C%22qtudou%22%3A%22real%22%2C%22qyouku%22%3A%22super%22%2C%22q56%22%3A%22super%22%2C%22qcntv%22%3A%22super%22%2C%22qletv%22%3A%22super2%22%2C%22qqiyi%22%3A%22real%22%2C%22qsohu%22%3A%22real%22%2C%22qqq%22%3A%22real%22%2C%22qhunantv%22%3A%22super%22%2C%22qku6%22%3A%22super%22%2C%22qyinyuetai%22%3A%22super%22%2C%22qtangdou%22%3A%22super%22%2C%22qxunlei%22%3A%22super%22%2C%22qsina%22%3A%22high%22%2C%22qpptv%22%3A%22super%22%2C%22qpps%22%3A%22high%22%2C%22qm1905%22%3A%22high%22%2C%22qbokecc%22%3A%22super%22%2C%22q17173%22%3A%22super%22%2C%22qcuctv%22%3A%22super%22%2C%22q163%22%3A%22super%22%2C%22xia%22%3A%22auto%22%2C%22pop%22%3A%22no%22%2C%22open%22%3A%22no%22%7D'}
 LOCATION_DIR = os.getcwd()
 
 #----------------------------------------------------------------------
@@ -69,14 +72,12 @@ def list_del_repeat(list):
 def logging_level_reader(LOG_LEVEL):
     """str->int
     Logging level."""
-    if 'INFO' in LOG_LEVEL:
-        return logging.INFO
-    elif 'DEBUG' in LOG_LEVEL:
-        return logging.DEBUG
-    elif 'WARNING' in LOG_LEVEL:
-        return logging.WARNING
-    elif 'FATAL' in LOG_LEVEL:
-        return logging.FATAL
+    return {
+        'INFO': logging.INFO,
+        'DEBUG': logging.DEBUG,
+        'WARNING': logging.WARNING,
+        'FATAL': logging.FATAL
+    }.get(LOG_LEVEL)
 
 #----------------------------------------------------------------------
 def calc_sign(string):
@@ -96,7 +97,7 @@ def read_cookie(cookiepath):
         cookies_file.close()
         # print(cookies)
         return cookies
-    except:
+    except Exception:
         logging.warning('Cannot read cookie, may affect some videos...')
         return ['']
 
@@ -160,7 +161,7 @@ def find_cid_api(vid, p, cookies):
                 pages = clean_name(str(node.toxml()[7:-8]))
                 logging.info('Total pages is ' + str(pages))
         return [cid, partname, title, pages]
-    except:  # If API failed
+    except Exception:  # If API failed
         logging.warning('Cannot connect to API server! \nIf you think this is wrong, please open an issue at \nhttps://github.com/cnbeining/Biligrab/issues with *ALL* the screen output, \nas well as your IP address and basic system info.\nYou can get these data via "-l".')
         logging.debug('API Data: ' + data)
         return ['', '', '', '']
@@ -219,8 +220,9 @@ def check_dependencies(download_software, concat_software, probe_software):
     return name_list[0][0], name_list[1][0], name_list[2][0]
 
 #----------------------------------------------------------------------
-def download_video(part_number, download_software, video_link):
+def download_video_link((part_number, download_software, video_link)):
     """"""
+    logging.info('Downloading #{part_number}...'.format(part_number = part_number))
     if download_software == 'aria2c':
         cmd = 'aria2c -c -s16 -x16 -k1M --out {part_number}.flv "{video_link}"'
     elif download_software == 'wget':
@@ -229,7 +231,19 @@ def download_video(part_number, download_software, video_link):
         cmd = 'curl -L -C -o {part_number}.flv "{video_link}"'
     elif download_software == 'axel':
         cmd = 'axel -n 20 -o {part_number}.flv "{video_link}"'
-    os.system(cmd.format(part_number = part_number, video_link = video_link))
+    cmd = cmd.format(part_number = part_number, video_link = video_link)
+    logging.debug(cmd)
+    return cmd
+
+#----------------------------------------------------------------------
+def execute_cmd(cmd):
+    """"""
+    return_code = subprocess.call(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if return_code == 0:
+        pass
+    else:
+        logging.warning('ERROR')
+    return return_code
 
 #----------------------------------------------------------------------
 def concat_videos(concat_software, vid_num, filename):
@@ -275,7 +289,7 @@ def process_m3u8(url):
     request = urllib2.Request(url, headers=BILIGRAB_HEADER)
     try:
         response = urllib2.urlopen(request)
-    except:
+    except Exception:
         logging.error('Cannot download required m3u8!')
         return []
     data = response.read()
@@ -306,10 +320,13 @@ def find_video_address_html5(vid, p, header):
     url_list = []
     try:
         response = urllib2.urlopen(request)
-    except:
+    except Exception:
         logging.error('Cannot connect to HTML5 API!')
         return []
     data = response.read()
+    #Fix #13
+    if response.info().get('Content-Encoding') == 'gzip':
+        data = gzip.GzipFile(fileobj=StringIO(data), mode="r").read()
     logging.debug(data)
     info = json.loads(data.decode('utf-8'))
     raw_url = info['src']
@@ -327,9 +344,9 @@ def find_video_address_force_original(cid, header):
     Give the original URL, if possible.
     Method #2."""
         # Force get oriurl
-    sign_this = calc_sign('appkey={APPKEY}&cid={cid}&quality=4{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY))
+    sign_this = calc_sign('appkey={APPKEY}&cid={cid}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY))
     api_url = 'http://interface.bilibili.com/player?'
-    request = urllib2.Request(api_url + 'appkey={APPKEY}&cid={cid}&quality=5&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this), headers=header)
+    request = urllib2.Request(api_url + 'appkey={APPKEY}&cid={cid}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this), headers=header)
     response = urllib2.urlopen(request)
     data = response.read()
     logging.debug('interface responce: ' + data)
@@ -373,12 +390,12 @@ def find_video_address_normal_api(cid, header, method, convert_m3u = False):
     4: Flvcd - Divided in another function
      [(VIDEO_URL, TIME_IN_SEC), ...]
     """
-    sign_this = calc_sign('appkey={APPKEY}&cid={cid}&quality=4{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY))
+    sign_this = calc_sign('appkey={APPKEY}&cid={cid}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY))
     if method == '1':
         api_url = 'http://interface.bilibili.com/v_cdn_play?'
     else:  #Method 0 or other
         api_url = 'http://interface.bilibili.com/playurl?'
-    request = urllib2.Request(api_url + 'appkey={APPKEY}&cid={cid}&quality=4&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this), headers=header)
+    request = urllib2.Request(api_url + 'appkey={APPKEY}&cid={cid}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this), headers=header)
     response = urllib2.urlopen(request)
     data = response.read()
     logging.debug('interface API: ' + data)
@@ -435,7 +452,7 @@ def get_resolution(filename, probe_software):
             resolution = get_resolution_ffprobe(filename)
         logging.debug('Software: {probe_software}, resolution {resolution}'.format(probe_software = probe_software, resolution = resolution))
         return resolution
-    except:  # magic number
+    except Exception:  # magic number
         return[1280, 720]
 
 #----------------------------------------------------------------------
@@ -465,7 +482,7 @@ def get_resolution_ffprobe(filename):
                 width = line.split('=')[1]
             if 'height=' in line:
                 height = line.split('=')[1]
-    except:
+    except Exception:
         return None
     # return width + 'x' + height
     return [int(width), int(height)]
@@ -498,7 +515,7 @@ def getvideosize(url, verbose=False):
         try:
             if dict.get(ffprobe_output, 'format')['duration'] > duration:
                 duration = dict.get(ffprobe_output, 'format')['duration']
-        except:
+        except Exception:
             pass
         for stream in dict.get(ffprobe_output, 'streams', []):
             try:
@@ -651,8 +668,41 @@ class ExportM3UException(Exception):
     def __str__(self):
         return repr(self.value)
 
+
+########################################################################
+class DownloadVideo(threading.Thread):
+    """Threaded Download Video"""
+    #----------------------------------------------------------------------
+    def __init__(self, queue):
+        threading.Thread.__init__(self)
+        self.queue = queue
+    #----------------------------------------------------------------------
+    def run(self):
+        while True:
+            #grabs start time from queue
+            down_set = self.queue.get()
+            #return_value = download_video(down_set)
+            cmd = download_video_link(down_set)
+            return_value = execute_cmd(cmd)
+            self.queue.task_done()
+
 #----------------------------------------------------------------------
-def main(vid, p, oversea, cookies, download_software, concat_software, is_export, probe_software, danmaku_only, time_fetch = 5):
+def main_threading(download_thread = 3, video_list = []):
+    """"""
+    command_pool = [(video_list.index(url_this), download_software, url_this) for url_this in video_list]
+    #spawn a pool of threads, and pass them queue instance
+    for i in range(int(download_thread)):
+        t = DownloadVideo(queue)
+        t.setDaemon(True)
+        t.start()
+    #populate queue with data
+    for command_single in command_pool:
+        queue.put(command_single)
+    #wait on the queue until everything has been processed
+    queue.join()
+
+#----------------------------------------------------------------------
+def main(vid, p, oversea, cookies, download_software, concat_software, is_export, probe_software, danmaku_only, time_fetch=5, download_thread=3):
     global cid, partname, title, videourl, is_first_run
     videourl = 'http://www.bilibili.com/video/av{vid}/index_{p}.html'.format(vid = vid, p = p)
     # Check both software
@@ -688,6 +738,8 @@ def main(vid, p, oversea, cookies, download_software, concat_software, is_export
         filename = title
     else:
         filename = cid
+    #In case cannot find which s which
+    filename = str(p) + ' - ' + filename
     # In case make too much folders
     folder_to_make = os.getcwd() + '/' + folder
     if is_first_run == 0:
@@ -745,17 +797,20 @@ def main(vid, p, oversea, cookies, download_software, concat_software, is_export
     if vid_num is 0:  # shit really hit the fan
         raise NoVIdeoURLException('FATAL: Cannot get video URL anyway!')
     logging.info('{vid_num} videos in part {part_now} to download, fetch yourself a cup of coffee...'.format(vid_num = vid_num, part_now = part_now))
-    for i in range(vid_num):
-        video_link = rawurl[i]
-        part_number = str(i)
-        logging.info('Downloading {slice_now} of {vid_num} videos in part {part_now}...'.format(slice_now = str(i + 1), vid_num = vid_num, part_now = part_now))
-        # Call a function to support multiple download softwares
-        download_video(part_number, download_software, video_link)
+    #Multi thread
+    if len(rawurl) == 1:
+        cmd = download_video_link((0,download_software,rawurl[0]))
+        os.system(cmd)
+    else:
+        global queue
+        queue = Queue.Queue()
+        main_threading(download_thread, rawurl)
+        queue.join()
     concat_videos(concat_software, vid_num, filename)
     if is_export >= 1:
         try:
             convert_ass(filename, probe_software)
-        except:
+        except Exception:
             logging.warning('Problem with ASS convertion!')
             pass
     logging.info('Part Done!')
@@ -774,11 +829,11 @@ def get_full_p(p_raw):
             part_now = '0'
             try:
                 lower = int(item[0])
-            except:
+            except Exception:
                 logging.warning('Cannot read lower!')
             try:
                 higher = int(item[1])
-            except:
+            except Exception:
                 logging.warning('Cannot read higher!')
             if lower == 0 or higher == 0:
                 if lower == 0 and higher != 0:
@@ -801,7 +856,7 @@ def get_full_p(p_raw):
         else:
             try:
                 p_list.append(int(item))
-            except:
+            except Exception:
                 logging.warning('Cannot read "{item}", abondon it.'.format(item = item))
                 # break
     p_list = list_del_repeat(p_list)
@@ -891,7 +946,7 @@ def usage():
     
     Usage:
     
-    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-p) (-m) (-n) (-u) (-t) (-r)
+    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-b) (-m) (-n) (-u) (-t) (-r) (-q)
     
     -h: Default: None
         Print this usage file.
@@ -968,7 +1023,7 @@ def usage():
     a python3 callable via 'python3'.
     If python3 not callable or danmaku2ass2/3 DNE, Biligrab will ask for action.
     
-    -p: Default: None
+    -b: Default: None
     Set the probe software.
     Biligrab supports Mediainfo and FFprobe.
     If not set, Biligrab will detect an avalable one;
@@ -991,18 +1046,22 @@ def usage():
     -t: Default: None
     The number of Mylist.
     Biligrab will process all the videos in this list.
+    
+    -q: Default: 3
+    The thread number for downloading.
+    Good to fix overhead problem.
     ''')
 
 #----------------------------------------------------------------------
 if __name__ == '__main__':
-    is_first_run, is_export, danmaku_only, IS_SLIENT, IS_M3U, mylist, time_fetch = 0, 1, 0, 0, 0, 0, 5
+    is_first_run, is_export, danmaku_only, IS_SLIENT, IS_M3U, mylist, time_fetch, download_thread = 0, 1, 0, 0, 0, 0, 5, 3
     argv_list,av_list = [], []
     argv_list = sys.argv[1:]
     p_raw, vid, oversea, cookiepath, download_software, concat_software, probe_software, vid_raw, LOG_LEVEL = '', '', '', '', '', '', '', '', 'INFO'
     convert_ass = convert_ass_py2
     try:
-        opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:l:e:b:m:n:u:t:",
-                                   ['help', "av=", 'part=', 'source=', 'cookie=', 'download=', 'concat=', 'log=', 'export=', 'probe=', 'danmaku=', 'slient=', 'm3u=', 'mylist='])
+        opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:l:e:b:m:n:u:t:q:",
+                                   ['help', "av=", 'part=', 'source=', 'cookie=', 'download=', 'concat=', 'log=', 'export=', 'probe=', 'danmaku=', 'slient=', 'm3u=', 'mylist=', 'thread='])
     except getopt.GetoptError:
         usage()
         exit()
@@ -1028,7 +1087,7 @@ if __name__ == '__main__':
         if o in ('-l', '--log'):
             try:
                 LOG_LEVEL = str(a)
-            except:
+            except Exception:
                 LOG_LEVEL = 'INFO'
         if o in ('-e', '--export'):
             is_export = int(a)
@@ -1042,6 +1101,8 @@ if __name__ == '__main__':
             IS_M3U = int(a)
         if o in ('-t', '--mylist'):
             mylist = a
+        if o in ('-q', '--thread'):
+            download_thread = int(a)
     if len(vid_raw) == 0:
         vid_raw = str(raw_input('av'))
         p_raw = str(raw_input('P'))
@@ -1103,7 +1164,7 @@ if __name__ == '__main__':
             print(data)
             print('========================DATA END==================')
             print('DEBUG: ' + str(av_list))
-        except:
+        except Exception:
             print('WARNING: Cannot connect to IP-geo database server!')
             pass
     for av in av_list:
@@ -1113,7 +1174,7 @@ if __name__ == '__main__':
             try:
                 p_raw = str('1~' + find_cid_api(vid, p_raw, cookies)[3])
                 p_list = get_full_p(p_raw)
-            except:
+            except Exception:
                 logging.info('Error when reading all the parts!')
                 if IS_SLIENT == 0:
                     input_raw = str(raw_input('Enter the part number you want, or "q" to quit.'))
