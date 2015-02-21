@@ -5,7 +5,7 @@ Yet another automatic/semi-automatic/manual danmaku and video file downloader of
 
 Integrated with most of the "black science". Good to bypass some copyright and geolocation restrictions.
 
-5 independent ways to parse source(s)! 
+6 independent ways to parse source(s)! Now with BilibiliPr!
 
 Auto concat and convert to MP4 (or FLV, even nothing, if not possible) file(s), direct integrate with Mukioplayer-Py-Mac(https://github.com/cnbeining/Mukioplayer-Py-Mac  , the Flash danmaku playing solution) and ABPlayer-HTML5-Mac(https://github.com/cnbeining/ABPlayerHTML5-Py--nix  , the HTML5 playing solution, preferred). 
 
@@ -77,6 +77,9 @@ Or command line mode:
     4: Use Flvcd.
        Good to fight with oversea and copyright restriction, but not working with iQiyi.
        May retrive better quality video, especially for Youku.
+    5: Use BilibiliPr.
+       Good to fight with some copyright restriction that BilibiliPr can fix.
+       Not always working though.
        
     -c: Default: ./bilicookies
     The path of cookies.
@@ -174,6 +177,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 History
 ----
+0.98.6: Add BilibiliPr's API.
+
 0.98.5: Add testing multi-part download, Change UA, Change error handling, Fix #13, #14.
 
 0.98.4: Change UA, change to use best source, rewrite HTML5 API as in #11.

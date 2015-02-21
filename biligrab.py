@@ -52,7 +52,7 @@ cookies, VIDEO_FORMAT = '', ''
 LOG_LEVEL, pages, FFPROBE_USABLE = 0, 0, 0
 APPKEY = '85eb6835b0a1034e'
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = '0.98.5'
+VER = '0.98.6'
 FAKE_HEADER = {
     'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.16 Safari/537.36',
     'Cache-Control': 'no-cache',
@@ -379,6 +379,32 @@ def find_link_flvcd(videourl):
             return rawurlflvcd
 
 #----------------------------------------------------------------------
+def find_video_address_pr(cid, quality, header):
+    """str,str->list
+    The API provided by BilibiliPr."""
+    logging.info('Finding link via BilibiliPr...')
+    api_url = 'http://pr.lolly.cc/P{quality}?cid={cid}'.format(quality = quality, cid = cid)
+    request = urllib2.Request(api_url, headers=header)
+    try:
+        response = urllib2.urlopen(request, timeout=3)
+        data = response.read()
+    except Exception:
+        logging.warning('No response!')
+        return ['ERROR']
+    logging.debug('BilibiliPr API: ' + data)
+    if '!' in data[0:2]:
+        logging.warning('API returned 404!')
+        return ['ERROR']
+    else:
+        rawurl = []
+        originalurl = ''
+        dom = parseString(data)
+        for node in dom.getElementsByTagName('durl'):
+            url = node.getElementsByTagName('url')[0]
+            rawurl.append(url.childNodes[0].data)
+        return rawurl
+
+#----------------------------------------------------------------------
 def find_video_address_normal_api(cid, header, method, convert_m3u = False):
     """str,str,str->list
     Change in 0.98: Return the file list directly.
@@ -388,6 +414,7 @@ def find_video_address_normal_api(cid, header, method, convert_m3u = False):
     2: Original URL API - Divided in another function
     3: Mobile API - Divided in another function
     4: Flvcd - Divided in another function
+    5: BilibiliPr
      [(VIDEO_URL, TIME_IN_SEC), ...]
     """
     sign_this = calc_sign('appkey={APPKEY}&cid={cid}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY))
@@ -417,6 +444,7 @@ def find_video_address_normal_api(cid, header, method, convert_m3u = False):
             rawurl.append(url.childNodes[0].data)
     return rawurl
 
+
 #----------------------------------------------------------------------
 def get_video(oversea, convert_m3u = False):
     """str->list
@@ -433,6 +461,20 @@ def get_video(oversea, convert_m3u = False):
             rawurl = find_video_address_html5(vid, p, BILIGRAB_HEADER)
     elif oversea == '4':
         rawurl = find_link_flvcd(videourl)
+    elif oversea == '5':
+        rawurl = find_video_address_pr(cid, 1080, BILIGRAB_HEADER)
+        if '404' in rawurl[0]:
+            logging.info('Using lower quality...')
+            rawurl = find_video_address_pr(cid, 720, BILIGRAB_HEADER)
+            if '404' in rawurl[0]:
+                logging.error('Failed!')
+                rawurl = []
+            else:
+                pass
+        elif 'ERROR' in rawurl[0]:
+            logging.info('Wait a little bit...')
+            time.sleep(5)
+            rawurl = find_video_address_pr(cid, 1080, BILIGRAB_HEADER)
     else:
         rawurl = find_video_address_normal_api(cid, BILIGRAB_HEADER, oversea, convert_m3u)
         if 'API_BLOCKED' in rawurl[0]:
@@ -988,6 +1030,9 @@ def usage():
     4: Use Flvcd.
        Good to fight with oversea and copyright restriction, but not working with iQiyi.
        May retrive better quality video, especially for Youku.
+    5: Use BilibiliPr.
+       Good to fight with some copyright restriction that BilibiliPr can fix.
+       Not always working though.
        
     -c: Default: ./bilicookies
     The path of cookies.
