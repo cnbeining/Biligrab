@@ -35,7 +35,7 @@ python biligrab.py
 
 Or command line mode:
 
-    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-b) (-m) (-n) (-u) (-t) (-r) (-q)
+    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-b) (-m) (-n) (-u) (-t) (-q) (-r)
     
     -h: Default: None
         Print this usage file.
@@ -142,6 +142,11 @@ Or command line mode:
     -q: Default: 3
     The thread number for downloading.
     Good to fix overhead problem.
+    
+    -r: Default: -1
+    Select video quality.
+    Only works with Source 0 or 1.
+    Range: 0~4, higher for better quality.
 
 Requirement
 -------
@@ -177,6 +182,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 History
 ----
+0.98.7: Add some quality selection.
+
 0.98.6: Add BilibiliPr's API.
 
 0.98.5: Add testing multi-part download, Change UA, Change error handling, Fix #13, #14.

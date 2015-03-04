@@ -46,15 +46,15 @@ except Exception:
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-global vid, cid, partname, title, videourl, part_now, is_first_run, APPKEY, SECRETKEY, LOG_LEVEL, VER, LOCATION_DIR, VIDEO_FORMAT, convert_ass, is_export, IS_SLIENT, pages, IS_M3U, FFPROBE_USABLE
+global vid, cid, partname, title, videourl, part_now, is_first_run, APPKEY, SECRETKEY, LOG_LEVEL, VER, LOCATION_DIR, VIDEO_FORMAT, convert_ass, is_export, IS_SLIENT, pages, IS_M3U, FFPROBE_USABLE, QUALITY
 
 cookies, VIDEO_FORMAT = '', ''
 LOG_LEVEL, pages, FFPROBE_USABLE = 0, 0, 0
 APPKEY = '85eb6835b0a1034e'
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = '0.98.6'
+VER = '0.98.7'
 FAKE_HEADER = {
-    'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.16 Safari/537.36',
+    'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.16 Safari/537.36',
     'Cache-Control': 'no-cache',
     'Pragma': 'no-cache', 
     'pianhao': '%7B%22qing%22%3A%22super%22%2C%22qtudou%22%3A%22real%22%2C%22qyouku%22%3A%22super%22%2C%22q56%22%3A%22super%22%2C%22qcntv%22%3A%22super%22%2C%22qletv%22%3A%22super2%22%2C%22qqiyi%22%3A%22real%22%2C%22qsohu%22%3A%22real%22%2C%22qqq%22%3A%22real%22%2C%22qhunantv%22%3A%22super%22%2C%22qku6%22%3A%22super%22%2C%22qyinyuetai%22%3A%22super%22%2C%22qtangdou%22%3A%22super%22%2C%22qxunlei%22%3A%22super%22%2C%22qsina%22%3A%22high%22%2C%22qpptv%22%3A%22super%22%2C%22qpps%22%3A%22high%22%2C%22qm1905%22%3A%22high%22%2C%22qbokecc%22%3A%22super%22%2C%22q17173%22%3A%22super%22%2C%22qcuctv%22%3A%22super%22%2C%22q163%22%3A%22super%22%2C%22xia%22%3A%22auto%22%2C%22pop%22%3A%22no%22%2C%22open%22%3A%22no%22%7D'}
@@ -417,12 +417,18 @@ def find_video_address_normal_api(cid, header, method, convert_m3u = False):
     5: BilibiliPr
      [(VIDEO_URL, TIME_IN_SEC), ...]
     """
-    sign_this = calc_sign('appkey={APPKEY}&cid={cid}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY))
     if method == '1':
         api_url = 'http://interface.bilibili.com/v_cdn_play?'
     else:  #Method 0 or other
         api_url = 'http://interface.bilibili.com/playurl?'
-    request = urllib2.Request(api_url + 'appkey={APPKEY}&cid={cid}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this), headers=header)
+    if QUALITY == -1:
+        sign_this = calc_sign('appkey={APPKEY}&cid={cid}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY))
+        interface_url = api_url + 'appkey={APPKEY}&cid={cid}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this)
+    else:
+        sign_this = calc_sign('appkey={APPKEY}&cid={cid}&quality={QUALITY}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, QUALITY = QUALITY))
+        interface_url = api_url + 'appkey={APPKEY}&cid={cid}&quality={QUALITY}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this, QUALITY = QUALITY)
+    request = urllib2.Request(interface_url, headers=header)
+    logging.debug('Interface: ' + interface_url)
     response = urllib2.urlopen(request)
     data = response.read()
     logging.debug('interface API: ' + data)
@@ -988,7 +994,7 @@ def usage():
     
     Usage:
     
-    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-b) (-m) (-n) (-u) (-t) (-r) (-q)
+    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-b) (-m) (-n) (-u) (-t) (-q) (-r)
     
     -h: Default: None
         Print this usage file.
@@ -1095,18 +1101,23 @@ def usage():
     -q: Default: 3
     The thread number for downloading.
     Good to fix overhead problem.
+    
+    -r: Default: -1
+    Select video quality.
+    Only works with Source 0 or 1.
+    Range: 0~4, higher for better quality.
     ''')
 
 #----------------------------------------------------------------------
 if __name__ == '__main__':
-    is_first_run, is_export, danmaku_only, IS_SLIENT, IS_M3U, mylist, time_fetch, download_thread = 0, 1, 0, 0, 0, 0, 5, 3
+    is_first_run, is_export, danmaku_only, IS_SLIENT, IS_M3U, mylist, time_fetch, download_thread, QUALITY = 0, 1, 0, 0, 0, 0, 5, 3, -1
     argv_list,av_list = [], []
     argv_list = sys.argv[1:]
     p_raw, vid, oversea, cookiepath, download_software, concat_software, probe_software, vid_raw, LOG_LEVEL = '', '', '', '', '', '', '', '', 'INFO'
     convert_ass = convert_ass_py2
     try:
-        opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:l:e:b:m:n:u:t:q:",
-                                   ['help', "av=", 'part=', 'source=', 'cookie=', 'download=', 'concat=', 'log=', 'export=', 'probe=', 'danmaku=', 'slient=', 'm3u=', 'mylist=', 'thread='])
+        opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:l:e:b:m:n:u:t:q:r:",
+                                   ['help', "av=", 'part=', 'source=', 'cookie=', 'download=', 'concat=', 'log=', 'export=', 'probe=', 'danmaku=', 'slient=', 'm3u=', 'mylist=', 'thread=', 'quality='])
     except getopt.GetoptError:
         usage()
         exit()
@@ -1148,6 +1159,8 @@ if __name__ == '__main__':
             mylist = a
         if o in ('-q', '--thread'):
             download_thread = int(a)
+        if o in ('-r', '--quality'):
+            QUALITY = int(a)
     if len(vid_raw) == 0:
         vid_raw = str(raw_input('av'))
         p_raw = str(raw_input('P'))
