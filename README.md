@@ -35,7 +35,7 @@ python biligrab.py
 
 Or command line mode:
 
-    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-b) (-m) (-n) (-u) (-t) (-q) (-r)
+    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-b) (-m) (-n) (-u) (-t) (-q) (-r) (-g)
     
     -h: Default: None
         Print this usage file.
@@ -147,6 +147,10 @@ Or command line mode:
     Select video quality.
     Only works with Source 0 or 1.
     Range: 0~4, higher for better quality.
+    
+    -g: Default: 6
+    Threads for downloading every part.
+    Works with aria2 and axel.
 
 Requirement
 -------
@@ -182,6 +186,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 History
 ----
+0.98.72: Add thread control, as in #15 .
+
 0.98.7: Add some quality selection.
 
 0.98.6: Add BilibiliPr's API.

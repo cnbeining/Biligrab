@@ -1,5 +1,5 @@
 '''
-Biligrab Lite 0.2
+Biligrab Lite 0.21
 Beining@ACICFG
 cnbeining[at]gmail.com
 http://www.cnbeining.com
@@ -71,6 +71,7 @@ def find_cid_api(vid, p):
         #print(biliurl)
     videourl = 'http://www.bilibili.tv/video/av'+ str(vid)+'/index_'+ str(p)+'.html'
     print('Fetching webpage...')
+    print(biliurl)
     try:
         request = urllib2.Request(biliurl, headers={ 'User-Agent' : 'Biligrab /0.8 (cnbeining@gmail.com)', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' , 'Cookie': cookies})
         response = urllib2.urlopen(request)
@@ -163,6 +164,8 @@ def main(vid, p, oversea):
 
 vid = str(raw_input('av'))
 p_raw = str(raw_input('P'))
+if p_raw == '':
+    p_raw = '1'
 oversea = '0'
 
 p_list = []
@@ -220,5 +223,4 @@ for p in p_list:
     sys.setdefaultencoding('utf-8')
     part_now = str(p)
     main(vid, p, oversea)
-    print('!!!!!!!!!!!!!!!\nWARNING: BiligrabLite may be depreciated later for the function has ben fulfilled by Biligrab\'s \'-m\' function.\n If you encounter any problem, please use Biligrab instead.\nError repprting or suggestions: https://github.com/cnbeining/Biligrab/issues!!!!!!!!!!!!!!!\n')
 exit()

@@ -52,7 +52,7 @@ cookies, VIDEO_FORMAT = '', ''
 LOG_LEVEL, pages, FFPROBE_USABLE = 0, 0, 0
 APPKEY = '85eb6835b0a1034e'
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = '0.98.7'
+VER = '0.98.72'
 FAKE_HEADER = {
     'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.16 Safari/537.36',
     'Cache-Control': 'no-cache',
@@ -220,18 +220,18 @@ def check_dependencies(download_software, concat_software, probe_software):
     return name_list[0][0], name_list[1][0], name_list[2][0]
 
 #----------------------------------------------------------------------
-def download_video_link((part_number, download_software, video_link)):
+def download_video_link((part_number, download_software, video_link, thread_single_download)):
     """"""
     logging.info('Downloading #{part_number}...'.format(part_number = part_number))
     if download_software == 'aria2c':
-        cmd = 'aria2c -c -s16 -x16 -k1M --out {part_number}.flv "{video_link}"'
+        cmd = 'aria2c -c -s{thread_single_download} -x{thread_single_download} -k1M --out {part_number}.flv "{video_link}"'
     elif download_software == 'wget':
         cmd = 'wget -c -O {part_number}.flv "{video_link}"'
     elif download_software == 'curl':
         cmd = 'curl -L -C -o {part_number}.flv "{video_link}"'
     elif download_software == 'axel':
-        cmd = 'axel -n 20 -o {part_number}.flv "{video_link}"'
-    cmd = cmd.format(part_number = part_number, video_link = video_link)
+        cmd = 'axel -n {thread_single_download} -o {part_number}.flv "{video_link}"'
+    cmd = cmd.format(part_number = part_number, video_link = video_link, thread_single_download = thread_single_download)
     logging.debug(cmd)
     return cmd
 
@@ -735,9 +735,9 @@ class DownloadVideo(threading.Thread):
             self.queue.task_done()
 
 #----------------------------------------------------------------------
-def main_threading(download_thread = 3, video_list = []):
+def main_threading(download_thread = 3, video_list = [], thread_single_download = 6):
     """"""
-    command_pool = [(video_list.index(url_this), download_software, url_this) for url_this in video_list]
+    command_pool = [(video_list.index(url_this), download_software, url_this, thread_single_download) for url_this in video_list]
     #spawn a pool of threads, and pass them queue instance
     for i in range(int(download_thread)):
         t = DownloadVideo(queue)
@@ -750,7 +750,7 @@ def main_threading(download_thread = 3, video_list = []):
     queue.join()
 
 #----------------------------------------------------------------------
-def main(vid, p, oversea, cookies, download_software, concat_software, is_export, probe_software, danmaku_only, time_fetch=5, download_thread=3):
+def main(vid, p, oversea, cookies, download_software, concat_software, is_export, probe_software, danmaku_only, time_fetch=5, download_thread=3, thread_single_download=6):
     global cid, partname, title, videourl, is_first_run
     videourl = 'http://www.bilibili.com/video/av{vid}/index_{p}.html'.format(vid = vid, p = p)
     # Check both software
@@ -847,12 +847,12 @@ def main(vid, p, oversea, cookies, download_software, concat_software, is_export
     logging.info('{vid_num} videos in part {part_now} to download, fetch yourself a cup of coffee...'.format(vid_num = vid_num, part_now = part_now))
     #Multi thread
     if len(rawurl) == 1:
-        cmd = download_video_link((0,download_software,rawurl[0]))
+        cmd = download_video_link((0,download_software,rawurl[0], thread_single_download))
         os.system(cmd)
     else:
         global queue
         queue = Queue.Queue()
-        main_threading(download_thread, rawurl)
+        main_threading(download_thread, rawurl, thread_single_download)
         queue.join()
     concat_videos(concat_software, vid_num, filename)
     if is_export >= 1:
@@ -994,7 +994,7 @@ def usage():
     
     Usage:
     
-    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-b) (-m) (-n) (-u) (-t) (-q) (-r)
+    python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-b) (-m) (-n) (-u) (-t) (-q) (-r) (-g)
     
     -h: Default: None
         Print this usage file.
@@ -1106,18 +1106,22 @@ def usage():
     Select video quality.
     Only works with Source 0 or 1.
     Range: 0~4, higher for better quality.
+    
+    -g: Default: 6
+    Threads for downloading every part.
+    Works with aria2 and axel.
     ''')
 
 #----------------------------------------------------------------------
 if __name__ == '__main__':
-    is_first_run, is_export, danmaku_only, IS_SLIENT, IS_M3U, mylist, time_fetch, download_thread, QUALITY = 0, 1, 0, 0, 0, 0, 5, 3, -1
+    is_first_run, is_export, danmaku_only, IS_SLIENT, IS_M3U, mylist, time_fetch, download_thread, QUALITY, thread_single_download = 0, 1, 0, 0, 0, 0, 5, 3, -1, 6
     argv_list,av_list = [], []
     argv_list = sys.argv[1:]
     p_raw, vid, oversea, cookiepath, download_software, concat_software, probe_software, vid_raw, LOG_LEVEL = '', '', '', '', '', '', '', '', 'INFO'
     convert_ass = convert_ass_py2
     try:
-        opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:l:e:b:m:n:u:t:q:r:",
-                                   ['help', "av=", 'part=', 'source=', 'cookie=', 'download=', 'concat=', 'log=', 'export=', 'probe=', 'danmaku=', 'slient=', 'm3u=', 'mylist=', 'thread=', 'quality='])
+        opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:l:e:b:m:n:u:t:q:r:g:",
+                                   ['help', "av=", 'part=', 'source=', 'cookie=', 'download=', 'concat=', 'log=', 'export=', 'probe=', 'danmaku=', 'slient=', 'm3u=', 'mylist=', 'thread=', 'quality=', 'thread_single='])
     except getopt.GetoptError:
         usage()
         exit()
@@ -1161,6 +1165,8 @@ if __name__ == '__main__':
             download_thread = int(a)
         if o in ('-r', '--quality'):
             QUALITY = int(a)
+        if o in ('-g', '--thread_single'):
+            thread_single_download = int(a)
     if len(vid_raw) == 0:
         vid_raw = str(raw_input('av'))
         p_raw = str(raw_input('P'))
@@ -1254,7 +1260,7 @@ if __name__ == '__main__':
             part_now = str(p)
             try:
                 logging.info('Downloading part {p} ...'.format(p = p))
-                main(vid, p, oversea, cookies, download_software, concat_software, is_export, probe_software, danmaku_only, time_fetch)
+                main(vid, p, oversea, cookies, download_software, concat_software, is_export, probe_software, danmaku_only, time_fetch, download_thread, thread_single_download)
             except DanmakuOnlyException:
                 pass
             except ExportM3UException:
