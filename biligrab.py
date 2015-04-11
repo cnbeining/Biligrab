@@ -17,6 +17,7 @@ https://github.com/cnbeining/Biligrab
 MIT license
 '''
 
+from ast import literal_eval
 import sys
 import os
 from StringIO import StringIO
@@ -52,12 +53,12 @@ cookies, VIDEO_FORMAT = '', ''
 LOG_LEVEL, pages, FFPROBE_USABLE = 0, 0, 0
 APPKEY = '85eb6835b0a1034e'
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = '0.98.72'
+VER = '0.98.8'
 FAKE_HEADER = {
     'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.16 Safari/537.36',
     'Cache-Control': 'no-cache',
     'Pragma': 'no-cache', 
-    'pianhao': '%7B%22qing%22%3A%22super%22%2C%22qtudou%22%3A%22real%22%2C%22qyouku%22%3A%22super%22%2C%22q56%22%3A%22super%22%2C%22qcntv%22%3A%22super%22%2C%22qletv%22%3A%22super2%22%2C%22qqiyi%22%3A%22real%22%2C%22qsohu%22%3A%22real%22%2C%22qqq%22%3A%22real%22%2C%22qhunantv%22%3A%22super%22%2C%22qku6%22%3A%22super%22%2C%22qyinyuetai%22%3A%22super%22%2C%22qtangdou%22%3A%22super%22%2C%22qxunlei%22%3A%22super%22%2C%22qsina%22%3A%22high%22%2C%22qpptv%22%3A%22super%22%2C%22qpps%22%3A%22high%22%2C%22qm1905%22%3A%22high%22%2C%22qbokecc%22%3A%22super%22%2C%22q17173%22%3A%22super%22%2C%22qcuctv%22%3A%22super%22%2C%22q163%22%3A%22super%22%2C%22xia%22%3A%22auto%22%2C%22pop%22%3A%22no%22%2C%22open%22%3A%22no%22%7D'}
+    'pianhao': '%7B%22qing%22%3A%22super%22%2C%22qtudou%22%3A%22real%22%2C%22qyouku%22%3A%22super%22%2C%22q56%22%3A%22super%22%2C%22qcntv%22%3A%22super%22%2C%22qletv%22%3A%22super2%22%2C%22qqiyi%22%3A%22real%22%2C%22qsohu%22%3A%22real%22%2C%22qqq%22%3A%22real%22%2C%22qhunantv%22%3A%22super%22%2C%22qku6%22%3A%22super%22%2C%22qyinyuetai%22%3A%22super%22%2C%22qtangdou%22%3A%22super%22%2C%22qxunlei%22%3A%22super%22%2C%22qsina%22%3A%22high%22%2C%22qpptv%22%3A%22super%22%2C%22qpps%22%3A%22high%22%2C%22qm1905%22%3A%22high%22%2C%22qbokecc%22%3A%22super%22%2C%22q17173%22%3A%22super%22%2C%22qcuctv%22%3A%22super%22%2C%22q163%22%3A%22super%22%2C%22q51cto%22%3A%22high%22%2C%22xia%22%3A%22auto%22%2C%22pop%22%3A%22no%22%2C%22open%22%3A%22no%22%7D'}
 LOCATION_DIR = os.getcwd()
 
 #----------------------------------------------------------------------
@@ -173,7 +174,7 @@ def find_cid_flvcd(videourl):
     global vid, cid, partname, title
     logging.info('Fetching webpage with raw page...')
     request = urllib2.Request(videourl, headers=FAKE_HEADER)
-    request.add_header('Accept-encoding', 'gzip')
+    #request.add_header('Accept-encoding', 'gzip')
     response = urllib2.urlopen(request)
     if response.info().get('Content-Encoding') == 'gzip':
         buf = StringIO(response.read())
@@ -365,10 +366,14 @@ def find_link_flvcd(videourl):
     Used in method 2 and 5."""
     logging.info('Finding link via Flvcd...')
     request = urllib2.Request('http://www.flvcd.com/parse.php?' +
-                              urllib.urlencode([('kw', videourl)]), headers=FAKE_HEADER)
+                              urllib.urlencode([('kw', videourl)]) + '&format=super', headers=FAKE_HEADER)
     request.add_header('Accept-encoding', 'gzip')
     response = urllib2.urlopen(request)
     data = response.read()
+    if response.info().get('Content-Encoding') == 'gzip':
+        buf = StringIO(data)
+        f = gzip.GzipFile(fileobj=buf)
+        data = f.read()
     data_list = data.split('\n')
     logging.debug(data)
     for items in data_list:
@@ -450,6 +455,19 @@ def find_video_address_normal_api(cid, header, method, convert_m3u = False):
             rawurl.append(url.childNodes[0].data)
     return rawurl
 
+#----------------------------------------------------------------------
+def find_link_you_get(videourl):
+    """str->list
+    Extract urls with you-get."""
+    command_result = commands.getstatusoutput('you-get -u {videourl}'.format(videourl = videourl))
+    logging.debug(command_result)
+    if command_result[0] != 0:
+        raise YougetURLException('You-get failed somehow! Raw output:\n\n{output}'.format(output = command_result[1]))
+    else:
+        url_list_str = str(command_result[1].split('\n')[-2])
+        url_list = literal_eval(url_list_str)
+        logging.debug('URL_LIST:{url_list}'.format(url_list = url_list))
+        return list(url_list)
 
 #----------------------------------------------------------------------
 def get_video(oversea, convert_m3u = False):
@@ -481,6 +499,9 @@ def get_video(oversea, convert_m3u = False):
             logging.info('Wait a little bit...')
             time.sleep(5)
             rawurl = find_video_address_pr(cid, 1080, BILIGRAB_HEADER)
+    elif oversea == '6':
+        raw_link = find_video_address_force_original(cid, BILIGRAB_HEADER)
+        rawurl = find_link_you_get(raw_link)
     else:
         rawurl = find_video_address_normal_api(cid, BILIGRAB_HEADER, oversea, convert_m3u)
         if 'API_BLOCKED' in rawurl[0]:
@@ -716,6 +737,18 @@ class ExportM3UException(Exception):
     def __str__(self):
         return repr(self.value)
 
+########################################################################
+class YougetURLException(Exception):
+
+    '''you-get cannot get URL somehow'''
+    #----------------------------------------------------------------------
+
+    def __init__(self, value):
+        self.value = value
+    #----------------------------------------------------------------------
+
+    def __str__(self):
+        return repr(self.value)
 
 ########################################################################
 class DownloadVideo(threading.Thread):
@@ -1039,6 +1072,8 @@ def usage():
     5: Use BilibiliPr.
        Good to fight with some copyright restriction that BilibiliPr can fix.
        Not always working though.
+    6: Use You-get (https://github.com/soimort/you-get).
+       You need a you-get callable directly like "you-get -u blahblah".
        
     -c: Default: ./bilicookies
     The path of cookies.
@@ -1269,5 +1304,5 @@ if __name__ == '__main__':
                 print('ERROR: Biligrab failed: %s' % e)
                 print('       If you think this should not happen, please dump your log using "-l", and open a issue ar https://github.com/cnbeining/Biligrab/issues .')
                 print('       Make sure you delete all the sensive data before you post it publicly.')
-                logging.debug('traceback.print_exc()')
+                traceback.print_exc()
     exit()
