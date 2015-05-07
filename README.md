@@ -189,6 +189,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 History
 ----
+0.98.81: Update as API domain update. Thanks for @m13253 's help.
+
 0.98.8: Add download via you-get; Fix traceback printing.
 
 0.98.72: Add thread control, as in #15 .

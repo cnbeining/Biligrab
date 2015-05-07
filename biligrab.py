@@ -53,7 +53,7 @@ cookies, VIDEO_FORMAT = '', ''
 LOG_LEVEL, pages, FFPROBE_USABLE = 0, 0, 0
 APPKEY = '85eb6835b0a1034e'
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = '0.98.8'
+VER = '0.98.81'
 FAKE_HEADER = {
     'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.16 Safari/537.36',
     'Cache-Control': 'no-cache',
@@ -175,7 +175,11 @@ def find_cid_flvcd(videourl):
     logging.info('Fetching webpage with raw page...')
     request = urllib2.Request(videourl, headers=FAKE_HEADER)
     #request.add_header('Accept-encoding', 'gzip')
-    response = urllib2.urlopen(request)
+    try:
+        response = urllib2.urlopen(request)
+    except urllib2.HTTPError:
+        logging.info('ERROR!')
+        return ''
     if response.info().get('Content-Encoding') == 'gzip':
         buf = StringIO(response.read())
         f = gzip.GzipFile(fileobj=buf)
@@ -316,7 +320,7 @@ def make_m3u8(video_list):
 def find_video_address_html5(vid, p, header):
     """str,str,dict->list
     Method #3."""
-    api_url = 'http://m.acg.tv/m/html5?aid={vid}&page={p}'.format(vid = vid, p = p)
+    api_url = 'http://www.bilibili.com/m/html5?aid={vid}&page={p}'.format(vid = vid, p = p)
     request = urllib2.Request(api_url, headers=header)
     url_list = []
     try:
@@ -790,9 +794,9 @@ def main(vid, p, oversea, cookies, download_software, concat_software, is_export
     logging.debug(concat_software + ', ' + download_software)
     # Start to find cid, api
     cid, partname, title, pages = find_cid_api(vid, p, cookies)
-    if cid is 0:
-        logging.warning('Cannot find cid, trying to do it brutely...')
-        find_cid_flvcd(videourl)
+    #if cid is 0:
+        #logging.warning('Cannot find cid, trying to do it brutely...')
+        #find_cid_flvcd(videourl)
     if cid is 0:
         if IS_SLIENT == 0:
             logging.warning('Strange, still cannot find cid... ')
