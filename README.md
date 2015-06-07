@@ -5,7 +5,7 @@ Yet another automatic/semi-automatic/manual danmaku and video file downloader of
 
 Integrated with most of the "black science". Good to bypass some copyright and geolocation restrictions.
 
-7 independent ways to parse source(s)! Now with BilibiliPr and you-get!
+7 independent ways to parse source(s)! Now with BilibiliPr and you-get! Even fake IP!
 
 Auto concat and convert to MP4 (or FLV, even nothing, if not possible) file(s), direct integrate with Mukioplayer-Py-Mac(https://github.com/cnbeining/Mukioplayer-Py-Mac  , the Flash danmaku playing solution) and ABPlayer-HTML5-Mac(https://github.com/cnbeining/ABPlayerHTML5-Py--nix  , the HTML5 playing solution, preferred). 
 
@@ -153,6 +153,9 @@ Or command line mode:
     -g: Default: 6
     Threads for downloading every part.
     Works with aria2 and axel.
+    
+    -i: Default: None
+    Fake IP address.
 
 Requirement
 -------
@@ -177,7 +180,7 @@ This program is provided **as is**, with absolutely no warranty.
 
 Contributing
 ------------
-Any contribution is welcome. 
+Any contribution are welcome. 
 
 For issues, it would be better to include the log output, which can be enabled by ```-l```. 
 
@@ -189,6 +192,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 History
 ----
+0.98.85: Rewrite url get function, also add IP faking.
+
 0.98.81: Update as API domain update. Thanks for @m13253 's help.
 
 0.98.8: Add download via you-get; Fix traceback printing.

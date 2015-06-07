@@ -47,13 +47,13 @@ except Exception:
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-global vid, cid, partname, title, videourl, part_now, is_first_run, APPKEY, SECRETKEY, LOG_LEVEL, VER, LOCATION_DIR, VIDEO_FORMAT, convert_ass, is_export, IS_SLIENT, pages, IS_M3U, FFPROBE_USABLE, QUALITY
+global vid, cid, partname, title, videourl, part_now, is_first_run, APPKEY, SECRETKEY, LOG_LEVEL, VER, LOCATION_DIR, VIDEO_FORMAT, convert_ass, is_export, IS_SLIENT, pages, IS_M3U, FFPROBE_USABLE, QUALITY, IS_FAKE_IP, FAKE_IP
 
 cookies, VIDEO_FORMAT = '', ''
 LOG_LEVEL, pages, FFPROBE_USABLE = 0, 0, 0
 APPKEY = '85eb6835b0a1034e'
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = '0.98.81'
+VER = '0.98.85'
 FAKE_HEADER = {
     'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.16 Safari/537.36',
     'Cache-Control': 'no-cache',
@@ -109,17 +109,46 @@ def clean_name(name):
     return (str(name).strip().replace('\\',' ').replace('/', ' ').replace('&', ' ')).replace('-', ' ')
 
 #----------------------------------------------------------------------
+def send_request(url, header, is_fake_ip):
+    """str,dict,int->str
+    Send request, and return answer."""
+    global IS_FAKE_IP
+    data = ''
+    if IS_FAKE_IP == 1:
+        header['X-Forwarded-For'] = FAKE_IP
+        header['Client-IP'] = FAKE_IP
+    try:
+        request = urllib2.Request(url, headers=header)
+        response = urllib2.urlopen(request)
+        data = response.read()
+    except urllib2.HTTPError:
+        logging.info('ERROR!')
+        return ''
+    if response.info().get('Content-Encoding') == 'gzip':
+        buf = StringIO(response.read())
+        f = gzip.GzipFile(fileobj=buf)
+        data = f.read()
+    #except Exception:
+        #raise URLOpenException('Cannot open URL! Raw output:\n\n{output}'.format(output = command_result[1]))
+    #print(request.headers)
+    logging.debug(data)
+    return data
+
+#----------------------------------------------------------------------
 def mylist_to_aid_list(mylist):
     """str/int->list"""
-    request = urllib2.Request('http://www.bilibili.com/mylist/mylist-{mylist}.js'.format(mylist = mylist), headers = FAKE_HEADER)
-    response = urllib2.urlopen(request)
+    data = send_request('http://www.bilibili.com/mylist/mylist-{mylist}.js'.format(mylist = mylist), FAKE_HEADER, IS_FAKE_IP)
+    #request = urllib2.Request('http://www.bilibili.com/mylist/mylist-{mylist}.js'.format(mylist = mylist), headers = FAKE_HEADER)
+    #response = urllib2.urlopen(request)
     aid_list = []
-    data = response.read()
+    #data = response.read()
     for i in data.split('\n')[-3].split(','):
         if 'aid' in i:
             aid_list.append(i.split(':')[1])
     return aid_list
 
+
+    
 #----------------------------------------------------------------------
 def find_cid_api(vid, p, cookies):
     """find cid and print video detail
@@ -138,9 +167,10 @@ def find_cid_api(vid, p, cookies):
     videourl = 'http://www.bilibili.com/video/av{vid}/index_{p}.html'.format(vid = vid, p = p)
     logging.info('Fetching api to read video info...')
     try:
-        request = urllib2.Request(biliurl, headers=BILIGRAB_HEADER)
-        response = urllib2.urlopen(request)
-        data = response.read()
+        #request = urllib2.Request(biliurl, headers=BILIGRAB_HEADER)
+        #response = urllib2.urlopen(request)
+        #data = response.read()
+        data = send_request(biliurl, BILIGRAB_HEADER, IS_FAKE_IP)
         logging.debug('Bilibili API: ' + data)
         dom = parseString(data)
         for node in dom.getElementsByTagName('cid'):
@@ -173,17 +203,18 @@ def find_cid_flvcd(videourl):
     set cid."""
     global vid, cid, partname, title
     logging.info('Fetching webpage with raw page...')
-    request = urllib2.Request(videourl, headers=FAKE_HEADER)
+    #request = urllib2.Request(videourl, headers=FAKE_HEADER)
+    data = send_request(videourl, FAKE_HEADER, IS_FAKE_IP)
     #request.add_header('Accept-encoding', 'gzip')
-    try:
-        response = urllib2.urlopen(request)
-    except urllib2.HTTPError:
-        logging.info('ERROR!')
-        return ''
-    if response.info().get('Content-Encoding') == 'gzip':
-        buf = StringIO(response.read())
-        f = gzip.GzipFile(fileobj=buf)
-        data = f.read()
+    #try:
+        #response = urllib2.urlopen(request)
+    #except urllib2.HTTPError:
+        #logging.info('ERROR!')
+        #return ''
+    #if response.info().get('Content-Encoding') == 'gzip':
+        #buf = StringIO(response.read())
+        #f = gzip.GzipFile(fileobj=buf)
+        #data = f.read()
     data_list = data.split('\n')
     logging.debug(data)
     # Todo: read title
@@ -244,9 +275,7 @@ def download_video_link((part_number, download_software, video_link, thread_sing
 def execute_cmd(cmd):
     """"""
     return_code = subprocess.call(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if return_code == 0:
-        pass
-    else:
+    if return_code != 0:
         logging.warning('ERROR')
     return return_code
 
@@ -259,7 +288,7 @@ def concat_videos(concat_software, vid_num, filename):
         ff = ''
         cwd = os.getcwd()
         for i in range(vid_num):
-            ff = ff + 'file \'{cwd}/{i}.flv\'\n'.format(cwd = cwd, i = i)
+            ff += 'file \'{cwd}/{i}.flv\'\n'.format(cwd = cwd, i = i)
         ff = ff.encode("utf8")
         f.write(ff)
         f.close()
@@ -268,19 +297,26 @@ def concat_videos(concat_software, vid_num, filename):
         os.system('ffmpeg -f concat -i ff.txt -c copy "' + filename + '".mp4')
         VIDEO_FORMAT = 'mp4'
         if os.path.isfile(str(filename + '.mp4')):
-            os.system('rm -r ff.txt')
-            for i in range(vid_num):
-                os.system('rm -r ' + str(i) + '.flv')
-            logging.info('Done, enjoy yourself!')
+            try:
+                os.remove('ff.txt')
+                for i in range(vid_num):
+                    os.remove(str(i) + '.flv')
+                    #os.system('rm -r ' + str(i) + '.flv')
+                logging.info('Done, enjoy yourself!')
+            except Exception:
+                logging.warning('Cannot delete temporary files!')
+                return ['']
         else:
             print('ERROR: Cannot concatenative files, trying to make flv...')
             os.system('ffmpeg -f concat -i ff.txt -c copy "' + filename + '".flv')
             VIDEO_FORMAT = 'flv'
             if os.path.isfile(str(filename + '.flv')):
                 logging.warning('FLV file made. Not possible to mux to MP4, highly likely due to audio format.')
-                os.system('rm -r ff.txt')
+                #os.system('rm -r ff.txt')
+                os.remove('ff.txt')
                 for i in range(vid_num):
-                    os.system('rm -r ' + str(i) + '.flv')
+                    #os.system('rm -r ' + str(i) + '.flv')
+                    os.remove(str(i) + '.flv')
             else:
                 logging.error('Cannot concatenative files!')
     elif concat_software == 'avconv':
@@ -291,14 +327,18 @@ def process_m3u8(url):
     """str->list
     Only Youku."""
     url_list = []
-    request = urllib2.Request(url, headers=BILIGRAB_HEADER)
-    try:
-        response = urllib2.urlopen(request)
-    except Exception:
+    data = send_request(url, FAKE_HEADER, IS_FAKE_IP)
+    if data == '':
         logging.error('Cannot download required m3u8!')
         return []
-    data = response.read()
-    logging.debug(data)
+    #request = urllib2.Request(url, headers=BILIGRAB_HEADER)
+    #try:
+        #response = urllib2.urlopen(request)
+    #except Exception:
+        #logging.error('Cannot download required m3u8!')
+        #return []
+    #data = response.read()
+    #logging.debug(data)
     data = data.split()
     if 'youku' in url:
         return [data[4].split('?')[0]]
@@ -321,18 +361,22 @@ def find_video_address_html5(vid, p, header):
     """str,str,dict->list
     Method #3."""
     api_url = 'http://www.bilibili.com/m/html5?aid={vid}&page={p}'.format(vid = vid, p = p)
-    request = urllib2.Request(api_url, headers=header)
-    url_list = []
-    try:
-        response = urllib2.urlopen(request)
-    except Exception:
+    data = send_request(api_url, header, IS_FAKE_IP)
+    if data == '':
         logging.error('Cannot connect to HTML5 API!')
         return []
-    data = response.read()
+    #request = urllib2.Request(api_url, headers=header)
+    #url_list = []
+    #try:
+        #response = urllib2.urlopen(request)
+    #except Exception:
+        #logging.error('Cannot connect to HTML5 API!')
+        #return []
+    #data = response.read()
     #Fix #13
-    if response.info().get('Content-Encoding') == 'gzip':
-        data = gzip.GzipFile(fileobj=StringIO(data), mode="r").read()
-    logging.debug(data)
+    #if response.info().get('Content-Encoding') == 'gzip':
+        #data = gzip.GzipFile(fileobj=StringIO(data), mode="r").read()
+    #logging.debug(data)
     info = json.loads(data.decode('utf-8'))
     raw_url = info['src']
     if 'error.mp4' in raw_url:
@@ -351,10 +395,11 @@ def find_video_address_force_original(cid, header):
         # Force get oriurl
     sign_this = calc_sign('appkey={APPKEY}&cid={cid}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY))
     api_url = 'http://interface.bilibili.com/player?'
-    request = urllib2.Request(api_url + 'appkey={APPKEY}&cid={cid}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this), headers=header)
-    response = urllib2.urlopen(request)
-    data = response.read()
-    logging.debug('interface responce: ' + data)
+    data = send_request(api_url + 'appkey={APPKEY}&cid={cid}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this), header, IS_FAKE_IP)
+    #request = urllib2.Request(api_url + 'appkey={APPKEY}&cid={cid}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this), headers=header)
+    #response = urllib2.urlopen(request)
+    #data = response.read()
+    #logging.debug('interface responce: ' + data)
     data = data.split('\n')
     for l in data:
         if 'oriurl' in l:
@@ -369,17 +414,19 @@ def find_link_flvcd(videourl):
     """str->list
     Used in method 2 and 5."""
     logging.info('Finding link via Flvcd...')
-    request = urllib2.Request('http://www.flvcd.com/parse.php?' +
-                              urllib.urlencode([('kw', videourl)]) + '&format=super', headers=FAKE_HEADER)
-    request.add_header('Accept-encoding', 'gzip')
-    response = urllib2.urlopen(request)
-    data = response.read()
-    if response.info().get('Content-Encoding') == 'gzip':
-        buf = StringIO(data)
-        f = gzip.GzipFile(fileobj=buf)
-        data = f.read()
+    data = send_request('http://www.flvcd.com/parse.php?' + urllib.urlencode([('kw', videourl)]) + '&format=super', FAKE_HEADER, IS_FAKE_IP)
+
+    #request = urllib2.Request('http://www.flvcd.com/parse.php?' +
+                              #urllib.urlencode([('kw', videourl)]) + '&format=super', headers=FAKE_HEADER)
+    #request.add_header('Accept-encoding', 'gzip')
+    #response = urllib2.urlopen(request)
+    #data = response.read()
+    #if response.info().get('Content-Encoding') == 'gzip':
+        #buf = StringIO(data)
+        #f = gzip.GzipFile(fileobj=buf)
+        #data = f.read()
     data_list = data.split('\n')
-    logging.debug(data)
+    #logging.debug(data)
     for items in data_list:
         if 'name' in items and 'inf' in items and 'input' in items:
             c = items
@@ -393,14 +440,16 @@ def find_video_address_pr(cid, quality, header):
     The API provided by BilibiliPr."""
     logging.info('Finding link via BilibiliPr...')
     api_url = 'http://pr.lolly.cc/P{quality}?cid={cid}'.format(quality = quality, cid = cid)
-    request = urllib2.Request(api_url, headers=header)
-    try:
-        response = urllib2.urlopen(request, timeout=3)
-        data = response.read()
-    except Exception:
-        logging.warning('No response!')
-        return ['ERROR']
-    logging.debug('BilibiliPr API: ' + data)
+    data = send_request(api_url, header, IS_FAKE_IP)
+    
+    #request = urllib2.Request(api_url, headers=header)
+    #try:
+        #response = urllib2.urlopen(request, timeout=3)
+        #data = response.read()
+    #except Exception:
+        #logging.warning('No response!')
+        #return ['ERROR']
+    #logging.debug('BilibiliPr API: ' + data)
     if '!' in data[0:2]:
         logging.warning('API returned 404!')
         return ['ERROR']
@@ -436,11 +485,12 @@ def find_video_address_normal_api(cid, header, method, convert_m3u = False):
     else:
         sign_this = calc_sign('appkey={APPKEY}&cid={cid}&quality={QUALITY}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, QUALITY = QUALITY))
         interface_url = api_url + 'appkey={APPKEY}&cid={cid}&quality={QUALITY}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this, QUALITY = QUALITY)
-    request = urllib2.Request(interface_url, headers=header)
-    logging.debug('Interface: ' + interface_url)
-    response = urllib2.urlopen(request)
-    data = response.read()
-    logging.debug('interface API: ' + data)
+    data = send_request(interface_url, header, IS_FAKE_IP)
+    #request = urllib2.Request(interface_url, headers=header)
+    #logging.debug('Interface: ' + interface_url)
+    #response = urllib2.urlopen(request)
+    #data = response.read()
+    #logging.debug('interface API: ' + data)
     for l in data.split('\n'):  # In case shit happens
         if 'error.mp4' in l:
             logging.warning('API header may be blocked!')
@@ -753,6 +803,20 @@ class YougetURLException(Exception):
 
     def __str__(self):
         return repr(self.value)
+
+########################################################################
+class URLOpenException(Exception):
+
+    '''cannot get URL somehow'''
+    #----------------------------------------------------------------------
+
+    def __init__(self, value):
+        self.value = value
+    #----------------------------------------------------------------------
+
+    def __str__(self):
+        return repr(self.value)
+
 
 ########################################################################
 class DownloadVideo(threading.Thread):
@@ -1149,6 +1213,9 @@ def usage():
     -g: Default: 6
     Threads for downloading every part.
     Works with aria2 and axel.
+    
+    -i: Default: None
+    Fake IP address.
     ''')
 
 #----------------------------------------------------------------------
@@ -1156,11 +1223,11 @@ if __name__ == '__main__':
     is_first_run, is_export, danmaku_only, IS_SLIENT, IS_M3U, mylist, time_fetch, download_thread, QUALITY, thread_single_download = 0, 1, 0, 0, 0, 0, 5, 3, -1, 6
     argv_list,av_list = [], []
     argv_list = sys.argv[1:]
-    p_raw, vid, oversea, cookiepath, download_software, concat_software, probe_software, vid_raw, LOG_LEVEL = '', '', '', '', '', '', '', '', 'INFO'
+    p_raw, vid, oversea, cookiepath, download_software, concat_software, probe_software, vid_raw, LOG_LEVEL, FAKE_IP, IS_FAKE_IP = '', '', '', '', '', '', '', '', 'INFO', '', 0
     convert_ass = convert_ass_py2
     try:
-        opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:l:e:b:m:n:u:t:q:r:g:",
-                                   ['help', "av=", 'part=', 'source=', 'cookie=', 'download=', 'concat=', 'log=', 'export=', 'probe=', 'danmaku=', 'slient=', 'm3u=', 'mylist=', 'thread=', 'quality=', 'thread_single='])
+        opts, args = getopt.getopt(argv_list, "ha:p:s:c:d:v:l:e:b:m:n:u:t:q:r:g:i:",
+                                   ['help', "av=", 'part=', 'source=', 'cookie=', 'download=', 'concat=', 'log=', 'export=', 'probe=', 'danmaku=', 'slient=', 'm3u=', 'mylist=', 'thread=', 'quality=', 'thread_single=', 'fake-ip='])
     except getopt.GetoptError:
         usage()
         exit()
@@ -1206,12 +1273,16 @@ if __name__ == '__main__':
             QUALITY = int(a)
         if o in ('-g', '--thread_single'):
             thread_single_download = int(a)
+        if o in ('-i', '--fake-ip'):
+            FAKE_IP = a
+            IS_FAKE_IP = 1
     if len(vid_raw) == 0:
         vid_raw = str(raw_input('av'))
         p_raw = str(raw_input('P'))
         oversea = str(raw_input('Source?'))
         cookiepath = './bilicookies'
     logging.basicConfig(level = logging_level_reader(LOG_LEVEL))
+    logging.debug('FAKE IP: ' + str(IS_FAKE_IP) + ' ' + FAKE_IP)
     av_list = get_full_p(vid_raw)
     if mylist != 0:
         av_list += mylist_to_aid_list(mylist)
