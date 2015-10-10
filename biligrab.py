@@ -54,8 +54,9 @@ LOG_LEVEL, pages, FFPROBE_USABLE = 0, 0, 0
 APPKEY = '85eb6835b0a1034e'
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
 VER = '0.98.86'
+FAKE_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.52 Safari/537.36'
 FAKE_HEADER = {
-    'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.16 Safari/537.36',
+    'User-Agent': FAKE_UA,
     'Cache-Control': 'no-cache',
     'Pragma': 'no-cache', 
     'pianhao': '%7B%22qing%22%3A%22super%22%2C%22qtudou%22%3A%22real%22%2C%22qyouku%22%3A%22super%22%2C%22q56%22%3A%22super%22%2C%22qcntv%22%3A%22super%22%2C%22qletv%22%3A%22super2%22%2C%22qqiyi%22%3A%22real%22%2C%22qsohu%22%3A%22real%22%2C%22qqq%22%3A%22real%22%2C%22qhunantv%22%3A%22super%22%2C%22qku6%22%3A%22super%22%2C%22qyinyuetai%22%3A%22super%22%2C%22qtangdou%22%3A%22super%22%2C%22qxunlei%22%3A%22super%22%2C%22qsina%22%3A%22high%22%2C%22qpptv%22%3A%22super%22%2C%22qpps%22%3A%22high%22%2C%22qm1905%22%3A%22high%22%2C%22qbokecc%22%3A%22super%22%2C%22q17173%22%3A%22super%22%2C%22qcuctv%22%3A%22super%22%2C%22q163%22%3A%22super%22%2C%22q51cto%22%3A%22high%22%2C%22xia%22%3A%22auto%22%2C%22pop%22%3A%22no%22%2C%22open%22%3A%22no%22%7D'}
@@ -260,14 +261,14 @@ def download_video_link((part_number, download_software, video_link, thread_sing
     """set->str"""
     logging.info('Downloading #{part_number}...'.format(part_number = part_number))
     if download_software == 'aria2c':
-        cmd = 'aria2c -c -s{thread_single_download} -x{thread_single_download} -k1M --out {part_number}.flv "{video_link}"'
+        cmd = 'aria2c -c -U "{FAKE_UA}" -s{thread_single_download} -x{thread_single_download} -k1M --out {part_number}.flv "{video_link}"'
     elif download_software == 'wget':
-        cmd = 'wget -c -O {part_number}.flv "{video_link}"'
+        cmd = 'wget -c -A "{FAKE_UA}" -O {part_number}.flv "{video_link}"'
     elif download_software == 'curl':
-        cmd = 'curl -L -C -o {part_number}.flv "{video_link}"'
+        cmd = 'curl -L -C -A "{FAKE_UA}" -o {part_number}.flv "{video_link}"'
     elif download_software == 'axel':
-        cmd = 'axel -n {thread_single_download} -o {part_number}.flv "{video_link}"'
-    cmd = cmd.format(part_number = part_number, video_link = video_link, thread_single_download = thread_single_download)
+        cmd = 'axel -U "{FAKE_UA}" -n {thread_single_download} -o {part_number}.flv "{video_link}"'
+    cmd = cmd.format(part_number = part_number, video_link = video_link, thread_single_download = thread_single_download, FAKE_UA = FAKE_UA)
     logging.debug(cmd)
     return cmd
 
