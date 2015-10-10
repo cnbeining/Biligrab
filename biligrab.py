@@ -53,7 +53,7 @@ cookies, VIDEO_FORMAT = '', ''
 LOG_LEVEL, pages, FFPROBE_USABLE = 0, 0, 0
 APPKEY = '85eb6835b0a1034e'
 SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = '0.98.85'
+VER = '0.98.86'
 FAKE_HEADER = {
     'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.16 Safari/537.36',
     'Cache-Control': 'no-cache',
@@ -257,7 +257,7 @@ def check_dependencies(download_software, concat_software, probe_software):
 
 #----------------------------------------------------------------------
 def download_video_link((part_number, download_software, video_link, thread_single_download)):
-    """"""
+    """set->str"""
     logging.info('Downloading #{part_number}...'.format(part_number = part_number))
     if download_software == 'aria2c':
         cmd = 'aria2c -c -s{thread_single_download} -x{thread_single_download} -k1M --out {part_number}.flv "{video_link}"'
@@ -485,6 +485,7 @@ def find_video_address_normal_api(cid, header, method, convert_m3u = False):
     else:
         sign_this = calc_sign('appkey={APPKEY}&cid={cid}&quality={QUALITY}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, QUALITY = QUALITY))
         interface_url = api_url + 'appkey={APPKEY}&cid={cid}&quality={QUALITY}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this, QUALITY = QUALITY)
+    logging.info(interface_url)
     data = send_request(interface_url, header, IS_FAKE_IP)
     #request = urllib2.Request(interface_url, headers=header)
     #logging.debug('Interface: ' + interface_url)
@@ -492,7 +493,7 @@ def find_video_address_normal_api(cid, header, method, convert_m3u = False):
     #data = response.read()
     #logging.debug('interface API: ' + data)
     for l in data.split('\n'):  # In case shit happens
-        if 'error.mp4' in l:
+        if 'error.mp4' in l or 'copyright.mp4' in l:
             logging.warning('API header may be blocked!')
             return ['API_BLOCKED']
     rawurl = []
@@ -518,8 +519,12 @@ def find_link_you_get(videourl):
     if command_result[0] != 0:
         raise YougetURLException('You-get failed somehow! Raw output:\n\n{output}'.format(output = command_result[1]))
     else:
-        url_list_str = str(command_result[1].split('\n')[-2])
-        url_list = literal_eval(url_list_str)
+        url_list = command_result[1].split('\n')
+        for k, v in enumerate(url_list):
+            if v.startswith('http'):
+                url_list = url_list[k:]
+                break
+        #url_list = literal_eval(url_list_str)
         logging.debug('URL_LIST:{url_list}'.format(url_list = url_list))
         return list(url_list)
 
@@ -836,7 +841,7 @@ class DownloadVideo(threading.Thread):
             self.queue.task_done()
 
 #----------------------------------------------------------------------
-def main_threading(download_thread = 3, video_list = [], thread_single_download = 6):
+def main_threading(download_thread = 3, video_list = [], thread_single_download = 16):
     """"""
     command_pool = [(video_list.index(url_this), download_software, url_this, thread_single_download) for url_this in video_list]
     #spawn a pool of threads, and pass them queue instance
@@ -851,7 +856,7 @@ def main_threading(download_thread = 3, video_list = [], thread_single_download 
     queue.join()
 
 #----------------------------------------------------------------------
-def main(vid, p, oversea, cookies, download_software, concat_software, is_export, probe_software, danmaku_only, time_fetch=5, download_thread=3, thread_single_download=6):
+def main(vid, p, oversea, cookies, download_software, concat_software, is_export, probe_software, danmaku_only, time_fetch=5, download_thread= 16, thread_single_download= 16):
     global cid, partname, title, videourl, is_first_run
     videourl = 'http://www.bilibili.com/video/av{vid}/index_{p}.html'.format(vid = vid, p = p)
     # Check both software
@@ -1220,7 +1225,7 @@ def usage():
 
 #----------------------------------------------------------------------
 if __name__ == '__main__':
-    is_first_run, is_export, danmaku_only, IS_SLIENT, IS_M3U, mylist, time_fetch, download_thread, QUALITY, thread_single_download = 0, 1, 0, 0, 0, 0, 5, 3, -1, 6
+    is_first_run, is_export, danmaku_only, IS_SLIENT, IS_M3U, mylist, time_fetch, download_thread, QUALITY, thread_single_download = 0, 1, 0, 0, 0, 0, 5, 16, -1, 16
     argv_list,av_list = [], []
     argv_list = sys.argv[1:]
     p_raw, vid, oversea, cookiepath, download_software, concat_software, probe_software, vid_raw, LOG_LEVEL, FAKE_IP, IS_FAKE_IP = '', '', '', '', '', '', '', '', 'INFO', '', 0

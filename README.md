@@ -192,6 +192,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 History
 ----
+0.98.86: Emergency update: Fake UA to download.
+
 0.98.85: Rewrite url get function, also add IP faking.
 
 0.98.81: Update as API domain update. Thanks for @m13253 's help.
