@@ -265,7 +265,7 @@ def download_video_link((part_number, download_software, video_link, thread_sing
     elif download_software == 'wget':
         cmd = 'wget -c -A "{FAKE_UA}" -O {part_number}.flv "{video_link}"'
     elif download_software == 'curl':
-        cmd = 'curl -L -C -A "{FAKE_UA}" -o {part_number}.flv "{video_link}"'
+        cmd = 'curl -L -C - -A "{FAKE_UA}" -o {part_number}.flv "{video_link}"'
     elif download_software == 'axel':
         cmd = 'axel -U "{FAKE_UA}" -n {thread_single_download} -o {part_number}.flv "{video_link}"'
     cmd = cmd.format(part_number = part_number, video_link = video_link, thread_single_download = thread_single_download, FAKE_UA = FAKE_UA)
