@@ -60,7 +60,7 @@ FAKE_HEADER = {
     'Cache-Control': 'no-cache',
     'Pragma': 'no-cache', 
     'pianhao': '%7B%22qing%22%3A%22super%22%2C%22qtudou%22%3A%22real%22%2C%22qyouku%22%3A%22super%22%2C%22q56%22%3A%22super%22%2C%22qcntv%22%3A%22super%22%2C%22qletv%22%3A%22super2%22%2C%22qqiyi%22%3A%22real%22%2C%22qsohu%22%3A%22real%22%2C%22qqq%22%3A%22real%22%2C%22qhunantv%22%3A%22super%22%2C%22qku6%22%3A%22super%22%2C%22qyinyuetai%22%3A%22super%22%2C%22qtangdou%22%3A%22super%22%2C%22qxunlei%22%3A%22super%22%2C%22qsina%22%3A%22high%22%2C%22qpptv%22%3A%22super%22%2C%22qpps%22%3A%22high%22%2C%22qm1905%22%3A%22high%22%2C%22qbokecc%22%3A%22super%22%2C%22q17173%22%3A%22super%22%2C%22qcuctv%22%3A%22super%22%2C%22q163%22%3A%22super%22%2C%22q51cto%22%3A%22high%22%2C%22xia%22%3A%22auto%22%2C%22pop%22%3A%22no%22%2C%22open%22%3A%22no%22%7D'}
-LOCATION_DIR = os.getcwd()
+LOCATION_DIR = os.path.dirname(os.path.realpath(__file__))
 
 #----------------------------------------------------------------------
 def list_del_repeat(list):
@@ -1054,7 +1054,7 @@ def check_dependencies_danmaku2ass(is_export):
     if is_export == 3:
         convert_ass = convert_ass_py3
         output = commands.getstatusoutput('python3 --help')
-        if str(output[0]) == '32512' or not os.path.exists('danmaku2ass3.py'):
+        if str(output[0]) == '32512' or not os.path.exists(os.path.join(LOCATION_DIR, 'danmaku2ass3.py')):
             logging.warning('danmaku2ass3.py DNE, python3 does not exist or not callable!')
             err_input = str(raw_input('Do you want to exit, use Python 2.x or stop the converting?(e/2/s)'))
             if err_input == 'e':
@@ -1069,7 +1069,7 @@ def check_dependencies_danmaku2ass(is_export):
                 is_export = 0
     elif is_export == 2 or is_export == 1:
         convert_ass = convert_ass_py2
-        if not os.path.exists('danmaku2ass2.py'):
+        if not os.path.exists(os.path.join(LOCATION_DIR, 'danmaku2ass2.py')):
             logging.warning('danmaku2ass2.py DNE!')
             err_input = str(raw_input('Do you want to exit, use Python 3.x or stop the converting?(e/3/s)'))
             if err_input == 'e':
