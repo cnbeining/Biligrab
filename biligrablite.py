@@ -19,9 +19,6 @@ import hashlib
 from xml.dom.minidom import parse, parseString
 import xml.dom.minidom
 
-reload(sys)
-sys.setdefaultencoding('utf-8')
-
 global vid
 global cid
 global partname
@@ -33,8 +30,6 @@ global appkey
 global secretkey
 appkey='85eb6835b0a1034e';
 secretkey = '2ad42749773c441109bdc0191257a664'
-
-
 
 def list_del_repeat(list):
     """delete repeating items in a list, and keep the order.
@@ -90,7 +85,7 @@ def find_cid_api(vid, p):
         for node in dom.getElementsByTagName('title'):
             if node.parentNode.tagName == "info":
                 title = node.toxml()[7:-8].strip()
-                print('Title is ' + title)
+                print('Title is ' + title.decode("utf-8"))
     except:  #If API failed
         print('ERROR: Cannot connect to API server!')
 
@@ -155,9 +150,9 @@ def main(vid, p, oversea):
     else:
         filename = cid
     print('Fetching XML...')
-    os.system('curl -o "'+filename+'.xml" --compressed  http://comment.bilibili.cn/'+cid+'.xml')
-    os.system('gzip -d '+cid+'.xml.gz')
-    print('The XML file, ' + filename + '.xml should be ready...enjoy!')
+    os.system((u'curl -o "'+filename+u'.xml" --compressed  http://comment.bilibili.cn/'+cid+u'.xml').encode(sys.stdout.encoding))
+    os.system((u'gzip -d '+cid+u'.xml.gz').encode(sys.stdout.encoding))
+    print(u'The XML file, ' + filename + u'.xml should be ready...enjoy!')
     #try api
     #
 
@@ -219,8 +214,7 @@ is_first_run = 0
 part_now = '0'
 print(p_list)
 for p in p_list:
-    reload(sys)
-    sys.setdefaultencoding('utf-8')
+    print part_now
     part_now = str(p)
     main(vid, p, oversea)
 exit()

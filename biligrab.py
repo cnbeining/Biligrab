@@ -44,9 +44,6 @@ try:
 except Exception:
     pass
 
-reload(sys)
-sys.setdefaultencoding('utf-8')
-
 global vid, cid, partname, title, videourl, part_now, is_first_run, APPKEY, SECRETKEY, LOG_LEVEL, VER, LOCATION_DIR, VIDEO_FORMAT, convert_ass, is_export, IS_SLIENT, pages, IS_M3U, FFPROBE_USABLE, QUALITY, IS_FAKE_IP, FAKE_IP
 
 cookies, VIDEO_FORMAT = '', ''
@@ -186,8 +183,8 @@ def find_cid_api(vid, p, cookies):
                 break
         for node in dom.getElementsByTagName('title'):
             if node.parentNode.tagName == "info":
-                title = clean_name(str(node.toxml()[7:-8]))
-                logging.info('Title is ' + title)
+                title = clean_name(str(node.toxml()[7:-8])).decode("utf-8")
+                logging.info((u'Title is ' + title).encode(sys.stdout.encoding))
         for node in dom.getElementsByTagName('pages'):
             if node.parentNode.tagName == "info":
                 pages = clean_name(str(node.toxml()[7:-8]))
@@ -280,44 +277,53 @@ def execute_cmd(cmd):
         logging.warning('ERROR')
     return return_code
 
+def execute_sysencode_cmd(command):
+    """execute cmd with sysencoding"""
+    os.system(command.decode("utf-8").encode(sys.stdout.encoding))
+
 #----------------------------------------------------------------------
 def concat_videos(concat_software, vid_num, filename):
     """str,str->None"""
-    global VIDEO_FORMAT
+    global VIDEO_FORMAT,title
     if concat_software == 'ffmpeg':
         f = open('ff.txt', 'w')
         ff = ''
         cwd = os.getcwd()
         for i in range(vid_num):
             ff += 'file \'{cwd}/{i}.flv\'\n'.format(cwd = cwd, i = i)
-        ff = ff.encode("utf8")
+        # ff = ff.encode("utf8")
         f.write(ff)
         f.close()
         logging.debug(ff)
         logging.info('Concating videos...')
-        os.system('ffmpeg -f concat -i ff.txt -c copy "' + filename + '".mp4')
+
+        execute_sysencode_cmd('ffmpeg -f concat -i ff.txt -c copy "' + filename + '".mp4')
         VIDEO_FORMAT = 'mp4'
-        if os.path.isfile(str(filename + '.mp4')):
+        if os.path.isfile((str(i) + '.mp4').decode("utf-8")):
             try:
-                os.remove('ff.txt')
+                # os.remove('ff.txt')
+                print((str(i) + '.flv').decode("utf-8"))
+                os.remove((str(i) + '.flv').decode("utf-8"))
                 for i in range(vid_num):
-                    os.remove(str(i) + '.flv')
-                    #os.system('rm -r ' + str(i) + '.flv')
+                    os.remove((str(i) + '.flv').decode("utf-8"))
+                    #execute_sysencode_cmd('rm -r ' + str(i) + '.flv')
                 logging.info('Done, enjoy yourself!')
             except Exception:
                 logging.warning('Cannot delete temporary files!')
                 return ['']
         else:
             print('ERROR: Cannot concatenative files, trying to make flv...')
-            os.system('ffmpeg -f concat -i ff.txt -c copy "' + filename + '".flv')
+            execute_sysencode_cmd('ffmpeg -f concat -i ff.txt -c copy "' + filename + '".flv')
             VIDEO_FORMAT = 'flv'
-            if os.path.isfile(str(filename + '.flv')):
+            if os.path.isfile((str(i) + '.flv').decode("utf-8")):
                 logging.warning('FLV file made. Not possible to mux to MP4, highly likely due to audio format.')
-                #os.system('rm -r ff.txt')
-                os.remove('ff.txt')
+                #execute_sysencode_cmd('rm -r ff.txt')
+                # os.remove('ff.txt')
+                print(('ff.txt').decode("utf-8"))
+                os.remove(('ff.txt').decode("utf-8"))
                 for i in range(vid_num):
-                    #os.system('rm -r ' + str(i) + '.flv')
-                    os.remove(str(i) + '.flv')
+                    #execute_sysencode_cmd('rm -r ' + str(i) + '.flv')
+                    os.remove((str(i) + '.flv').decode("utf-8"))
             else:
                 logging.error('Cannot concatenative files!')
     elif concat_software == 'avconv':
@@ -680,7 +686,7 @@ def convert_ass_py3(filename, probe_software, resolution = [0, 0]):
         logging.info('Trying to get resolution...')
         resolution = get_resolution(filename, probe_software)
     logging.info('Resolution is %dx%d' % (resolution[0], resolution[1]))
-    if os.system('python3 %s/danmaku2ass3.py -o %s -s %dx%d -fs %d -a 0.8 -dm 8 %s' % (LOCATION_DIR, ass_name, resolution[0], resolution[1], int(math.ceil(resolution[1] / 21.6)), xml_name)) == 0:
+    if execute_sysencode_cmd('python3 %s/danmaku2ass3.py -o %s -s %dx%d -fs %d -a 0.8 -dm 8 %s' % (LOCATION_DIR, ass_name, resolution[0], resolution[1], int(math.ceil(resolution[1] / 21.6)), xml_name)) == 0:
         logging.info('The ASS file should be ready!')
     else:
         logging.error('''Danmaku2ASS failed.
@@ -717,9 +723,9 @@ def download_danmaku(cid, filename):
     Used to be in main(), but replaced due to the merge of -m (BiligrabLite).
     If danmaku only, will see whether need to export ASS."""
     logging.info('Fetching XML...')
-    os.system('curl -o "{filename}.xml" --compressed  http://comment.bilibili.com/{cid}.xml'.format(filename = filename, cid = cid))
-    #os.system('gzip -d '+cid+'.xml.gz')
-    logging.info('The XML file, {filename}.xml should be ready...enjoy!'.format(filename = filename))
+    execute_sysencode_cmd('curl -o "{filename}.xml" --compressed  http://comment.bilibili.com/{cid}.xml'.format(filename = filename, cid = cid))
+    #execute_sysencode_cmd('gzip -d '+cid+'.xml.gz')
+    logging.info('The XML file, {filename}.xml should be ready...enjoy!'.format(filename = filename.decode("utf-8").encode(sys.stdout.encoding)))
     
 #----------------------------------------------------------------------
 def logcommand(command_line):
@@ -955,7 +961,7 @@ def main(vid, p, oversea, cookies, download_software, concat_software, is_export
     #Multi thread
     if len(rawurl) == 1:
         cmd = download_video_link((0,download_software,rawurl[0], thread_single_download))
-        os.system(cmd)
+        execute_sysencode_cmd(cmd)
     else:
         global queue
         queue = Queue.Queue()
