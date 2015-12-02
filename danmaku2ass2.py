@@ -690,7 +690,7 @@ def WriteComment(f, c, row, width, height, bottomReserved, fontsize, duration_ma
         styles.append('\\c&H%s&' % ConvertColor(c[5]))
         if c[5] == 0x000000:
             styles.append('\\3c&HFFFFFF&')
-    f.write('Dialogue: 2,%(start)s,%(end)s,%(styleid)s,,0000,0000,0000,,{%(styles)s}%(text)s\n' % {'start': ConvertTimestamp(c[0]), 'end': ConvertTimestamp(c[0]+duration), 'styles': ''.join(styles), 'text': text, 'styleid': styleid})
+    f.write(u'Dialogue: 2,%(start)s,%(end)s,%(styleid)s,,0000,0000,0000,,{%(styles)s}%(text)s\n' % {'start': ConvertTimestamp(c[0]), 'end': ConvertTimestamp(c[0]+duration), 'styles': ''.join(styles), 'text': text, 'styleid': styleid})
 
 
 def ASSEscape(s):
@@ -815,6 +815,11 @@ def ReadComments(input_files, font_size=25.0, progress_callback=None):
 def GetCommentProcessor(input_file):
     return CommentFormatMap[ProbeCommentFormat(input_file)]
 
+def turn_List_Unicode(List):
+    Files = []
+    for _file in List:
+        Files.append(_file.decode(sys.stdin.encoding))
+    return Files
 
 def main():
     logging.basicConfig(format='%(levelname)s: %(message)s')
@@ -836,6 +841,7 @@ def main():
         width, height = bytes(args.size).decode('utf-8', 'replace').split('x', 1)
         width = int(width)
         height = int(height)
+        args.file = turn_List_Unicode(args.file)
     except ValueError:
         raise ValueError(_('Invalid stage size: %r') % args.size)
     Danmaku2ASS(args.file, args.output, width, height, args.protect, args.font, args.fontsize, args.alpha, args.duration_marquee, args.duration_still, args.reduce)
