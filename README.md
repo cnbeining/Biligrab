@@ -13,7 +13,7 @@ Interact and command line mode for different situations. ALso support slient mod
 
 Able to process single or multiple videos with easy grammar, or reading mylist.
 
-Intergrated with Danmaku2ass(https://github.com/m13253/danmaku2ass, GPL v2) by m13253, able to convert danmaku to ASS subtitle. Both py2 and master branch avalable for better handling danmaku.
+Intergrated with Danmaku2ass(https://github.com/m13253/danmaku2ass, GPL v2) by m13253, able to convert danmaku to ASS subtitle. Both py2 and master branch available for better handling danmaku.
 
 Able to export danmaku only.
 
@@ -29,7 +29,7 @@ The file should looks like:
 
     DedeUserID=123456;DedeUserID__ckMd5=****************;SESSDATA=*******************
 
-Interactive mode (Note some of the functions are not avalable via this mode):
+Interactive mode (Note some of the functions are not available via this mode):
 
 python biligrab.py
 
@@ -42,7 +42,7 @@ Or command line mode:
         
     -a: Default: None
         The av number.
-        If not set, Biligrab will use the falloff interact mode.
+        If not set, Biligrab will use the fallback interactive mode.
         Support "~", "," and mix use.
         Examples:
             Input        Output
@@ -54,29 +54,29 @@ Or command line mode:
     -p: Default: 0
         The part number.
         Able to use the same syntax as "-a".
-        If set to 0, Biligrab will download all the avalable parts in the video.
+        If set to 0, Biligrab will download all the available parts in the video.
         
     -s: Default: 0
     Source to download.
     0: The original API source, can be Letv backup,
-       and can failed if the original video is not avalable(e.g., deleted)
+       and can failed if the original video is not available(e.g., deleted)
     1: The CDN API source, "oversea accelerate".
        Can be MINICDN backup in Mainland China or oversea.
        Good to bypass some bangumi's limit.
     2: Force to use the original source.
-       Use Flvcd to parase the video, but would fail if
+       Use Flvcd to parse the video, but would fail if
        1) The original source DNE, e.g., some old videos
        2) The original source is Letvcloud itself.
-       3) Other unknown reason(s) that stops Flvcd from parasing the video.
+       3) Other unknown reason(s) that stops Flvcd from parsing the video.
     For any video that failed to parse, Biligrab will try to use Flvcd.
     (Mainly for oversea users regarding to copyright-restricted bangumies.)
     If the API is blocked, Biligrab would fake the UA.
     3: (Not stable) Use the HTML5 API.
        This works for downloading some cached Letvcloud videos, but is slow, and would fail for no reason sometimes.
-       Will retry if unavalable.
+       Will retry if unavailable.
     4: Use Flvcd.
        Good to fight with oversea and copyright restriction, but not working with iQiyi.
-       May retrive better quality video, especially for Youku.
+       May retrieve better quality video, especially for Youku.
     5: Use BilibiliPr.
        Good to fight with some copyright restriction that BilibiliPr can fix.
        Not always working though.
@@ -90,15 +90,15 @@ Or command line mode:
     -d: Default: None
     Set the desired download software.
     Biligrab supports aria2c(16 threads), axel(20 threads), wget and curl by far.
-    If not set, Biligrab will detect an avalable one;
-    If none of those is avalable, Biligrab will quit.
+    If not set, Biligrab will detect an available one;
+    If none of those is available, Biligrab will quit.
     For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
     
     -v: Default:None
     Set the desired concatenate software.
     Biligrab supports ffmpeg by far.
-    If not set, Biligrab will detect an avalable one;
-    If none of those is avalable, Biligrab will quit.
+    If not set, Biligrab will detect an available one;
+    If none of those is available, Biligrab will quit.
     For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
     Make sure you include a *working* command line example of this software!
     
@@ -120,8 +120,8 @@ Or command line mode:
     -b: Default: None
     Set the probe software.
     Biligrab supports Mediainfo and FFprobe.
-    If not set, Biligrab will detect an avalable one;
-    If none of those is avalable, Biligrab will quit.
+    If not set, Biligrab will detect an available one;
+    If none of those is available, Biligrab will quit.
     For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
     Make sure you include a *working* command line example of this software!
     
@@ -186,7 +186,7 @@ For issues, it would be better to include the log output, which can be enabled b
 
 MAKE SURE YOU DELETE ANY SENSIVE INFORMATION THAT YOU DO NOT WANT TO SHARE PUBLICLY(E.G., IP ADDRESS, USERNAME, ETC.) BEFORE YOU POST ANYTHING!
 
-*You can still send me the info privately via my email. PGP public key avalable at http://www.cnbeining.com/about/*
+*You can still send me the info privately via my email. PGP public key available at http://www.cnbeining.com/about/*
 
 Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail.com .
 

@@ -198,7 +198,7 @@ for item in p_raw:
         try:
             p_list.append(int(item))
         except:
-            print('Cannot read "'+str(item)+'", abondon it.')
+            print('Cannot read "'+str(item)+'", abandon it.')
             #break
 
 
