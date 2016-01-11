@@ -22,7 +22,6 @@ import sys
 import os
 from StringIO import StringIO
 import gzip
-import shutil
 import urllib
 import urllib2
 import math
@@ -36,8 +35,7 @@ import traceback
 import threading
 import Queue
 
-from xml.dom.minidom import parse, parseString
-import xml.dom.minidom
+from xml.dom.minidom import parseString
 
 try:
     from danmaku2ass2 import *
@@ -164,6 +162,7 @@ def find_cid_api(vid, p, cookies):
     logging.debug('BiliURL: ' + biliurl)
     videourl = 'http://www.bilibili.com/video/av{vid}/index_{p}.html'.format(vid = vid, p = p)
     logging.info('Fetching api to read video info...')
+    data = ''
     try:
         #request = urllib2.Request(biliurl, headers=BILIGRAB_HEADER)
         #response = urllib2.urlopen(request)
@@ -254,7 +253,7 @@ def check_dependencies(download_software, concat_software, probe_software):
     return name_list[0][0], name_list[1][0], name_list[2][0]
 
 #----------------------------------------------------------------------
-def download_video_link((part_number, download_software, video_link, thread_single_download)):
+def download_video_link(part_number, download_software, video_link, thread_single_download):
     """set->str"""
     logging.info('Downloading #{part_number}...'.format(part_number = part_number))
     if download_software == 'aria2c':
