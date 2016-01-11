@@ -7,13 +7,13 @@ Integrated with most of the "black science". Good to bypass some copyright and g
 
 7 independent ways to parse source(s)! Now with BilibiliPr and you-get! Even fake IP!
 
-Auto concat and convert to MP4 (or FLV, even nothing, if not possible) file(s), direct integrate with Mukioplayer-Py-Mac(https://github.com/cnbeining/Mukioplayer-Py-Mac  , the Flash danmaku playing solution) and ABPlayer-HTML5-Mac(https://github.com/cnbeining/ABPlayerHTML5-Py--nix  , the HTML5 playing solution, preferred). 
+Auto concatenate and convert to MP4 (or FLV, even nothing, if not possible) file(s), direct integrate with Mukioplayer-Py-Mac(https://github.com/cnbeining/Mukioplayer-Py-Mac  , the Flash danmaku playing solution) and ABPlayer-HTML5-Mac(https://github.com/cnbeining/ABPlayerHTML5-Py--nix  , the HTML5 playing solution, preferred). 
 
-Interact and command line mode for different situations. ALso support slient mode.
+Interact and command line mode for different situations. Also support silent mode.
 
 Able to process single or multiple videos with easy grammar, or reading mylist.
 
-Intergrated with Danmaku2ass(https://github.com/m13253/danmaku2ass, GPL v2) by m13253, able to convert danmaku to ASS subtitle. Both py2 and master branch available for better handling danmaku.
+Integrated with Danmaku2ass(https://github.com/m13253/danmaku2ass, GPL v2) by m13253, able to convert danmaku to ASS subtitle. Both py2 and master branch available for better handling danmaku.
 
 Able to export danmaku only.
 
@@ -129,7 +129,7 @@ Or command line mode:
     Only download the danmaku.
     
     -n: Default: 0
-    Slient Mode.
+    Silent Mode.
     Biligrab will not ask any question.
     
     -u: Default: 0
@@ -184,7 +184,7 @@ Any contribution are welcome.
 
 For issues, it would be better to include the log output, which can be enabled by ```-l```. 
 
-MAKE SURE YOU DELETE ANY SENSIVE INFORMATION THAT YOU DO NOT WANT TO SHARE PUBLICLY(E.G., IP ADDRESS, USERNAME, ETC.) BEFORE YOU POST ANYTHING!
+MAKE SURE YOU DELETE ANY SENSITIVE INFORMATION THAT YOU DO NOT WANT TO SHARE PUBLICLY(E.G., IP ADDRESS, USERNAME, ETC.) BEFORE YOU POST ANYTHING!
 
 *You can still send me the info privately via my email. PGP public key available at http://www.cnbeining.com/about/*
 
@@ -230,11 +230,11 @@ History
 
 0.98: Fix error with special characters in filename; Add export to M3U file to use players like MPlayer, VLC, etc.; Rewrite video URL API logic; Fix error with Danmaku2ASS(main); Error handling with ffprobe
 
-0.97.9: Rewrite URL retrive logic; Divide URL retrive to functions; Change to ```.format()``` style; Add HTML5 API; Directly use Flvcd; Beautify ERROR logging.
+0.97.9: Rewrite URL retrieve logic; Divide URL retrieve to functions; Change to ```.format()``` style; Add HTML5 API; Directly use Flvcd; Beautify ERROR logging.
 
 0.97.5: Add (auto) download all the pages; Auto PEP-8.
 
-0.97: Slient mode; Multiple video mode; Functions beautify; More error handling.
+0.97: Silent mode; Multiple video mode; Functions beautify; More error handling.
 
 0.96.2: Merge pull request #6, #7: Optimize Danmaku2ASS parameters and exception handling, thanks to @m13253's help; Fix error when cookie does not exist, thanks to @m13253's report.
 
@@ -246,7 +246,7 @@ History
 
 0.94: Add faking UA to bypass blocking; Add auto-generate UA; Rewrite API logic.
 
-0.93: Fix error when handling filenames containing ```/\&```, thanks to @solimot 's report; Add log mode, which can be enabled by ```-l 1 ```; Clean multiple headers; Rearrange global varibles.
+0.93: Fix error when handling filenames containing ```/\&```, thanks to @solimot 's report; Add log mode, which can be enabled by ```-l 1 ```; Clean multiple headers; Rearrange global variables.
 
 0.92: Fix wrongly exit when downloading multiple parts.
 
@@ -254,7 +254,7 @@ History
 
 0.90: Fix if cannot get download URL for some reason(geo location, or API server error), try to use Flvcd to download video. 
 
-0.89: Fix #4, force declare the varible, and set the path if not assigned. 
+0.89: Fix #4, force declare the variable, and set the path if not assigned. 
 
 0.88: Fix #3, 2 typos.
 

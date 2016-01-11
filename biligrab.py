@@ -1200,7 +1200,7 @@ def usage():
     Only download the danmaku.
     
     -n: Default: 0
-    Slient Mode.
+    Silent Mode.
     Biligrab will not ask any question.
     
     -u: Default: 0
