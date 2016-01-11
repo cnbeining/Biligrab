@@ -1130,10 +1130,10 @@ def usage():
     -s: Default: 0
     Source to download.
     0: The original API source, can be Letv backup,
-       and can failed if the original video is not available(e.g., deleted)
+       and can fail if the original video is not available(e.g., deleted)
     1: The CDN API source, "oversea accelerate".
        Can be MINICDN backup in Mainland China or oversea.
-       Good to bypass some bangumi's limit.
+       Good to bypass some bangumi's restrictions.
     2: Force to use the original source.
        Use Flvcd to parse the video, but would fail if
        1) The original source DNE, e.g., some old videos

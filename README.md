@@ -7,13 +7,13 @@ Integrated with most of the "black science". Good to bypass some copyright and g
 
 7 independent ways to parse source(s)! Now with BilibiliPr and you-get! Even fake IP!
 
-Auto concatenate and convert to MP4 (or FLV, even nothing, if not possible) file(s), direct integrate with Mukioplayer-Py-Mac(https://github.com/cnbeining/Mukioplayer-Py-Mac  , the Flash danmaku playing solution) and ABPlayer-HTML5-Mac(https://github.com/cnbeining/ABPlayerHTML5-Py--nix  , the HTML5 playing solution, preferred). 
+Auto concatenate and convert to MP4 (or FLV, even nothing, if not possible) file(s), directly integrate with Mukioplayer-Py-Mac(https://github.com/cnbeining/Mukioplayer-Py-Mac  , the Flash danmaku playing solution) and ABPlayer-HTML5-Mac(https://github.com/cnbeining/ABPlayerHTML5-Py--nix  , the HTML5 playing solution, preferred). 
 
-Interact and command line mode for different situations. Also support silent mode.
+Interactive and command line mode for different situations. Also support silent mode.
 
 Able to process single or multiple videos with easy grammar, or reading mylist.
 
-Integrated with Danmaku2ass(https://github.com/m13253/danmaku2ass, GPL v2) by m13253, able to convert danmaku to ASS subtitle. Both py2 and master branch available for better handling danmaku.
+Integrated with Danmaku2ass(https://github.com/m13253/danmaku2ass, GPL v2) by m13253, able to convert danmaku to ASS subtitle. Both py2 and master branch available for better danmaku handling.
 
 Able to export danmaku only.
 
@@ -25,7 +25,7 @@ Usage
 ------
 If you have a Bilibili account, set the cookie with https://github.com/dantmnf/biliupload/blob/master/getcookie.py  will help you to download some of the restricted videos. Also you can do that by hand.
 
-The file should looks like:
+The file should look like:
 
     DedeUserID=123456;DedeUserID__ckMd5=****************;SESSDATA=*******************
 
@@ -59,10 +59,10 @@ Or command line mode:
     -s: Default: 0
     Source to download.
     0: The original API source, can be Letv backup,
-       and can failed if the original video is not available(e.g., deleted)
+       and can fail if the original video is not available(e.g., deleted)
     1: The CDN API source, "oversea accelerate".
        Can be MINICDN backup in Mainland China or oversea.
-       Good to bypass some bangumi's limit.
+       Good to bypass some bangumi's restrictions.
     2: Force to use the original source.
        Use Flvcd to parse the video, but would fail if
        1) The original source DNE, e.g., some old videos
