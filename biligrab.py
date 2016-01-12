@@ -842,7 +842,7 @@ class DownloadVideo(threading.Thread):
             #grabs start time from queue
             down_set = self.queue.get()
             #return_value = download_video(down_set)
-            cmd = download_video_link(down_set)
+            cmd = download_video_link(*down_set)
             return_value = execute_cmd(cmd)
             self.queue.task_done()
 
@@ -959,7 +959,7 @@ def main(vid, p, oversea, cookies, download_software, concat_software, is_export
     logging.info('{vid_num} videos in part {part_now} to download, fetch yourself a cup of coffee...'.format(vid_num = vid_num, part_now = part_now))
     #Multi thread
     if len(rawurl) == 1:
-        cmd = download_video_link((0,download_software,rawurl[0], thread_single_download))
+        cmd = download_video_link(0,download_software,rawurl[0], thread_single_download)
         execute_sysencode_cmd(cmd)
     else:
         global queue
