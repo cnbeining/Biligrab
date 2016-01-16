@@ -22,7 +22,6 @@ import sys
 import os
 from StringIO import StringIO
 import gzip
-import shutil
 import urllib
 import urllib2
 import math
@@ -36,8 +35,7 @@ import traceback
 import threading
 import Queue
 
-from xml.dom.minidom import parse, parseString
-import xml.dom.minidom
+from xml.dom.minidom import parseString
 
 try:
     from danmaku2ass2 import *
@@ -61,7 +59,7 @@ LOCATION_DIR = os.path.dirname(os.path.realpath(__file__))
 
 #----------------------------------------------------------------------
 def list_del_repeat(list):
-    """delete repeating items in a list, and keep the order.
+    """delete repeated items in a list, and keep the order.
     http://www.cnblogs.com/infim/archive/2011/03/10/1979615.html"""
     l2 = []
     [l2.append(i) for i in list if not i in l2]
@@ -164,6 +162,7 @@ def find_cid_api(vid, p, cookies):
     logging.debug('BiliURL: ' + biliurl)
     videourl = 'http://www.bilibili.com/video/av{vid}/index_{p}.html'.format(vid = vid, p = p)
     logging.info('Fetching api to read video info...')
+    data = ''
     try:
         #request = urllib2.Request(biliurl, headers=BILIGRAB_HEADER)
         #response = urllib2.urlopen(request)
@@ -254,7 +253,7 @@ def check_dependencies(download_software, concat_software, probe_software):
     return name_list[0][0], name_list[1][0], name_list[2][0]
 
 #----------------------------------------------------------------------
-def download_video_link((part_number, download_software, video_link, thread_single_download)):
+def download_video_link(part_number, download_software, video_link, thread_single_download):
     """set->str"""
     logging.info('Downloading #{part_number}...'.format(part_number = part_number))
     if download_software == 'aria2c':
@@ -312,7 +311,7 @@ def concat_videos(concat_software, vid_num, filename):
                 logging.warning('Cannot delete temporary files!')
                 return ['']
         else:
-            print('ERROR: Cannot concatenative files, trying to make flv...')
+            print('ERROR: Cannot concatenate files, trying to make flv...')
             execute_sysencode_cmd('ffmpeg -f concat -i ff.txt -c copy "' + filename + '".flv')
             VIDEO_FORMAT = 'flv'
             if os.path.isfile((str(i) + '.flv').decode("utf-8")):
@@ -325,7 +324,7 @@ def concat_videos(concat_software, vid_num, filename):
                     #execute_sysencode_cmd('rm -r ' + str(i) + '.flv')
                     os.remove((str(i) + '.flv').decode("utf-8"))
             else:
-                logging.error('Cannot concatenative files!')
+                logging.error('Cannot concatenate files!')
     elif concat_software == 'avconv':
         pass
 
@@ -387,7 +386,7 @@ def find_video_address_html5(vid, p, header):
     info = json.loads(data.decode('utf-8'))
     raw_url = info['src']
     if 'error.mp4' in raw_url:
-        logging.error('HTML5 API returned ERROR or not avalable!')
+        logging.error('HTML5 API returned ERROR or not available!')
         return []  #As in #11
     if 'm3u8' in raw_url:
         logging.info('Found m3u8, processing...')
@@ -843,7 +842,7 @@ class DownloadVideo(threading.Thread):
             #grabs start time from queue
             down_set = self.queue.get()
             #return_value = download_video(down_set)
-            cmd = download_video_link(down_set)
+            cmd = download_video_link(*down_set)
             return_value = execute_cmd(cmd)
             self.queue.task_done()
 
@@ -960,7 +959,7 @@ def main(vid, p, oversea, cookies, download_software, concat_software, is_export
     logging.info('{vid_num} videos in part {part_now} to download, fetch yourself a cup of coffee...'.format(vid_num = vid_num, part_now = part_now))
     #Multi thread
     if len(rawurl) == 1:
-        cmd = download_video_link((0,download_software,rawurl[0], thread_single_download))
+        cmd = download_video_link(0,download_software,rawurl[0], thread_single_download)
         execute_sysencode_cmd(cmd)
     else:
         global queue
@@ -972,7 +971,7 @@ def main(vid, p, oversea, cookies, download_software, concat_software, is_export
         try:
             convert_ass(filename, probe_software)
         except Exception:
-            logging.warning('Problem with ASS convertion!')
+            logging.warning('Problem with ASS conversion!')
             pass
     logging.info('Part Done!')
 
@@ -1018,7 +1017,7 @@ def get_full_p(p_raw):
             try:
                 p_list.append(int(item))
             except Exception:
-                logging.warning('Cannot read "{item}", abondon it.'.format(item = item))
+                logging.warning('Cannot read "{item}", abandon it.'.format(item = item))
                 # break
     p_list = list_del_repeat(p_list)
     return p_list
@@ -1040,7 +1039,7 @@ def check_dependencies_exportm3u(IS_M3U):
         output = commands.getstatusoutput('ffprobe --help')
         if str(output[0]) == '32512':
             logging.error('ffprobe DNE, python3 does not exist or not callable!')
-            err_input = str(raw_input('Do you want to exit, ignore or stop the converting?(e/i/s)'))
+            err_input = str(raw_input('Do you want to exit, ignore or stop the conversion?(e/i/s)'))
             if err_input == 'e':
                 exit()
             elif err_input == '2':
@@ -1048,7 +1047,7 @@ def check_dependencies_exportm3u(IS_M3U):
             elif err_input == 's':
                 IS_M3U = 0
             else:
-                logging.warning('Cannot read input, stop the converting!')
+                logging.warning('Cannot read input, stop the conversion!')
                 IS_M3U = 0
         else:
             FFPROBE_USABLE = 1
@@ -1062,7 +1061,7 @@ def check_dependencies_danmaku2ass(is_export):
         output = commands.getstatusoutput('python3 --help')
         if str(output[0]) == '32512' or not os.path.exists(os.path.join(LOCATION_DIR, 'danmaku2ass3.py')):
             logging.warning('danmaku2ass3.py DNE, python3 does not exist or not callable!')
-            err_input = str(raw_input('Do you want to exit, use Python 2.x or stop the converting?(e/2/s)'))
+            err_input = str(raw_input('Do you want to exit, use Python 2.x or stop the conversion?(e/2/s)'))
             if err_input == 'e':
                 exit()
             elif err_input == '2':
@@ -1071,13 +1070,13 @@ def check_dependencies_danmaku2ass(is_export):
             elif err_input == 's':
                 is_export = 0
             else:
-                logging.warning('Cannot read input, stop the converting!')
+                logging.warning('Cannot read input, stop the conversion!')
                 is_export = 0
     elif is_export == 2 or is_export == 1:
         convert_ass = convert_ass_py2
         if not os.path.exists(os.path.join(LOCATION_DIR, 'danmaku2ass2.py')):
             logging.warning('danmaku2ass2.py DNE!')
-            err_input = str(raw_input('Do you want to exit, use Python 3.x or stop the converting?(e/3/s)'))
+            err_input = str(raw_input('Do you want to exit, use Python 3.x or stop the conversion?(e/3/s)'))
             if err_input == 'e':
                 exit()
             elif err_input == '3':
@@ -1086,7 +1085,7 @@ def check_dependencies_danmaku2ass(is_export):
             elif err_input == 's':
                 is_export = 0
             else:
-                logging.warning('Cannot read input, stop the converting!')
+                logging.warning('Cannot read input, stop the conversion!')
                 is_export = 0
     else:
         convert_ass = convert_ass_py2
@@ -1114,7 +1113,7 @@ def usage():
         
     -a: Default: None
         The av number.
-        If not set, Biligrab will use the falloff interact mode.
+        If not set, Biligrab will use the fallback interactive mode.
         Support "~", "," and mix use.
         Examples:
             Input        Output
@@ -1126,29 +1125,29 @@ def usage():
     -p: Default: 0
         The part number.
         Able to use the same syntax as "-a".
-        If set to 0, Biligrab will download all the avalable parts in the video.
+        If set to 0, Biligrab will download all the available parts in the video.
         
     -s: Default: 0
     Source to download.
     0: The original API source, can be Letv backup,
-       and can failed if the original video is not avalable(e.g., deleted)
+       and can fail if the original video is not available(e.g., deleted)
     1: The CDN API source, "oversea accelerate".
        Can be MINICDN backup in Mainland China or oversea.
-       Good to bypass some bangumi's limit.
+       Good to bypass some bangumi's restrictions.
     2: Force to use the original source.
-       Use Flvcd to parase the video, but would fail if
+       Use Flvcd to parse the video, but would fail if
        1) The original source DNE, e.g., some old videos
        2) The original source is Letvcloud itself.
-       3) Other unknown reason(s) that stops Flvcd from parasing the video.
+       3) Other unknown reason(s) that stops Flvcd from parsing the video.
     For any video that failed to parse, Biligrab will try to use Flvcd.
     (Mainly for oversea users regarding to copyright-restricted bangumies.)
     If the API is blocked, Biligrab would fake the UA.
     3: (Not stable) Use the HTML5 API.
        This works for downloading some cached Letvcloud videos, but is slow, and would fail for no reason sometimes.
-       Will retry if unavalable.
+       Will retry if unavailable.
     4: Use Flvcd.
        Good to fight with oversea and copyright restriction, but not working with iQiyi.
-       May retrive better quality video, especially for Youku.
+       May retrieve better quality video, especially for Youku.
     5: Use BilibiliPr.
        Good to fight with some copyright restriction that BilibiliPr can fix.
        Not always working though.
@@ -1162,15 +1161,15 @@ def usage():
     -d: Default: None
     Set the desired download software.
     Biligrab supports aria2c(16 threads), axel(20 threads), wget and curl by far.
-    If not set, Biligrab will detect an avalable one;
-    If none of those is avalable, Biligrab will quit.
+    If not set, Biligrab will detect an available one;
+    If none of those is available, Biligrab will quit.
     For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
     
     -v: Default:None
     Set the desired concatenate software.
     Biligrab supports ffmpeg by far.
-    If not set, Biligrab will detect an avalable one;
-    If none of those is avalable, Biligrab will quit.
+    If not set, Biligrab will detect an available one;
+    If none of those is available, Biligrab will quit.
     For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
     Make sure you include a *working* command line example of this software!
     
@@ -1192,8 +1191,8 @@ def usage():
     -b: Default: None
     Set the probe software.
     Biligrab supports Mediainfo and FFprobe.
-    If not set, Biligrab will detect an avalable one;
-    If none of those is avalable, Biligrab will quit.
+    If not set, Biligrab will detect an available one;
+    If none of those is available, Biligrab will quit.
     For more software support, please open an issue at https://github.com/cnbeining/Biligrab/issues/
     Make sure you include a *working* command line example of this software!
     
@@ -1201,7 +1200,7 @@ def usage():
     Only download the danmaku.
     
     -n: Default: 0
-    Slient Mode.
+    Silent Mode.
     Biligrab will not ask any question.
     
     -u: Default: 0
@@ -1339,13 +1338,13 @@ if __name__ == '__main__':
     BILIGRAB_UA = 'Biligrab / ' + str(VER) + ' (cnbeining@gmail.com)'
     BILIGRAB_HEADER = {'User-Agent': BILIGRAB_UA, 'Cache-Control': 'no-cache', 'Pragma': 'no-cache', 'Cookie': cookies[0]}
     if LOG_LEVEL == 'DEBUG':
-        logging.debug('!!!!!!!!!!!!!!!!!!!!!!!\nWARNING: This log contains some sensive data. You may want to delete some part of the data before you post it publicly!\n!!!!!!!!!!!!!!!!!!!!!!!')
+        logging.debug('!!!!!!!!!!!!!!!!!!!!!!!\nWARNING: This log contains some sensitive data. You may want to delete some part of the data before you post it publicly!\n!!!!!!!!!!!!!!!!!!!!!!!')
         logging.debug('BILIGRAB_HEADER')
         try:
             request = urllib2.Request('http://ipinfo.io/json', headers=FAKE_HEADER)
             response = urllib2.urlopen(request)
             data = response.read()
-            print('!!!!!!!!!!!!!!!!!!!!!!!\nWARNING: This log contains some sensive data. You may want to delete some part of the data before you post it publicly!\n!!!!!!!!!!!!!!!!!!!!!!!')
+            print('!!!!!!!!!!!!!!!!!!!!!!!\nWARNING: This log contains some sensitive data. You may want to delete some part of the data before you post it publicly!\n!!!!!!!!!!!!!!!!!!!!!!!')
             print('=======================DUMP DATA==================')
             print(data)
             print('========================DATA END==================')
@@ -1389,7 +1388,7 @@ if __name__ == '__main__':
                 pass
             except Exception as e:
                 print('ERROR: Biligrab failed: %s' % e)
-                print('       If you think this should not happen, please dump your log using "-l", and open a issue ar https://github.com/cnbeining/Biligrab/issues .')
-                print('       Make sure you delete all the sensive data before you post it publicly.')
+                print('       If you think this should not happen, please dump your log using "-l", and open a issue at https://github.com/cnbeining/Biligrab/issues .')
+                print('       Make sure you delete all the sensitive data before you post it publicly.')
                 traceback.print_exc()
     exit()

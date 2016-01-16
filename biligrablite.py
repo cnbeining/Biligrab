@@ -10,14 +10,10 @@ import sys
 import os
 from StringIO import StringIO
 import gzip
-import urllib
 import urllib2
-import sys
-import commands
 import hashlib
 
-from xml.dom.minidom import parse, parseString
-import xml.dom.minidom
+from xml.dom.minidom import parseString
 
 global vid
 global cid
@@ -202,7 +198,7 @@ for item in p_raw:
         try:
             p_list.append(int(item))
         except:
-            print('Cannot read "'+str(item)+'", abondon it.')
+            print('Cannot read "'+str(item)+'", abandon it.')
             #break
 
 
