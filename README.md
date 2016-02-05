@@ -3,38 +3,35 @@ Biligrab
 
 Yet another automatic/semi-automatic/manual danmaku and video file downloader of Bilibili.
 
-Integrated with most of the "black science". Good to bypass some copyright and geolocation restrictions.
+This grabber is integrated with most of the "black techs". Good to bypass some copyright and
+geolocation restrictions:
 
-7 independent ways to parse source(s)! Now with BilibiliPr and you-get! Even fake IP!
-
-Auto concatenate and convert to MP4 (or FLV, even nothing, if not possible) file(s), directly integrate with Mukioplayer-Py-Mac(https://github.com/cnbeining/Mukioplayer-Py-Mac  , the Flash danmaku playing solution) and ABPlayer-HTML5-Mac(https://github.com/cnbeining/ABPlayerHTML5-Py--nix  , the HTML5 playing solution, preferred). 
-
-Interactive and command line mode for different situations. Also support silent mode.
-
-Able to process single or multiple videos with easy grammar, or reading mylist.
-
-Integrated with Danmaku2ass(https://github.com/m13253/danmaku2ass, GPL v2) by m13253, able to convert danmaku to ASS subtitle. Both py2 and master branch available for better danmaku handling.
-
-Able to export danmaku only.
-
-Or, if you prefer, Biligrab can export a M3U file, with which you can play danmaku without waiting with players like MPlayer, MPC or VLC, etc. 
-
-Comes with a built-in multi-part download, useful to reduce slow overheads.
+* 7 independent ways to parse source(s)! Now with BilibiliPr and you-get! And fake IP!
+* Auto concatenates and converts to MP4 (or FLV, even nothing, if not possible) file(s) via direct integration with [Mukioplayer-Py-Mac](https://github.com/cnbeining/Mukioplayer-Py-Mac) (the Flash danmaku playing solution) and [ABPlayer-HTML5-Mac](https://github.com/cnbeining/ABPlayerHTML5-Py--nix) (the HTML5 playing solution, preferred). 
+* Interactive and command line mode for different use-cases. And also silent mode.
+* Process single or multiple videos with ease. Now you can use Bilibili *mylist*s.
+* Convert danmaku to ASS subtitles with ease using m13253's [Danmaku2ass](https://github.com/m13253/danmaku2ass) (GPLv2).
+  Both py2 and master (py3) branches available for better danmaku handling.
+* Damaku-only exports
+* M3U exports -- play danmaku without waiting with players like MPlayer, MPC or VLC, etc. 
+* Built-in multi-part download, useful to reduce slow overheads.
 
 Usage
-------
-If you have a Bilibili account, set the cookie with https://github.com/dantmnf/biliupload/blob/master/getcookie.py  will help you to download some of the restricted videos. Also you can do that by hand.
+-----
+
+If you have a Bilibili account, setting the cookie with [dantmnf/biliupload/getcookie.py](https://github.com/dantmnf/biliupload/blob/master/getcookie.py) will help you to download some of the restricted videos. You can do this by hand too.
 
 The file should look like:
 
     DedeUserID=123456;DedeUserID__ckMd5=****************;SESSDATA=*******************
 
-Interactive mode (Note some of the functions are not available via this mode):
+Interactive mode (Note some functionalities are not available in this mode):
 
-python biligrab.py
+    $ python2 biligrab.py
 
 Or command line mode:
 
+    $ python2 biligrab.py -h
     python biligrab.py (-h) (-a) (-p) (-s) (-c) (-d) (-v) (-l) (-e) (-b) (-m) (-n) (-u) (-t) (-q) (-r) (-g)
     
     -h: Default: None
@@ -157,21 +154,23 @@ Or command line mode:
     -i: Default: None
     Fake IP address.
 
-Requirement
--------
+Requirements
+------------
+
 - Python 2.7
 - curl + None/aria2c/wget/axel
 - ffmpeg
-- mediainfo/ffprobe(for danmaku2ass)
-- Python 3.x(for danmaku2ass's python3 mode, or you-get)
-- you-get(if you use mode 6, please refer to https://github.com/soimort/you-get .)
+- mediainfo/ffprobe (for danmaku2ass)
+- Python 3.x (for danmaku2ass's python3 mode, or you-get)
+- you-get (See https://github.com/soimort/you-get for mode 6 info.)
 
 Author
 -----
 Beining, http://www.cnbeining.com/
 
 License
------
+-------
+
 MIT license.
 
 The Danmaku2ass(master) and Danmaku2ass(py2) part belongs to @m13253, GPLv3 license. Used under the authorization of the original author.
@@ -180,18 +179,20 @@ This program is provided **as is**, with absolutely no warranty.
 
 Contributing
 ------------
+
 Any contribution are welcome. 
 
-For issues, it would be better to include the log output, which can be enabled by ```-l```. 
+For issues, it would be better to include the log output, which can be enabled by `-l`. 
 
-MAKE SURE YOU DELETE ANY SENSITIVE INFORMATION THAT YOU DO NOT WANT TO SHARE PUBLICLY(E.G., IP ADDRESS, USERNAME, ETC.) BEFORE YOU POST ANYTHING!
+MAKE SURE YOU DELETE ANY SENSITIVE INFORMATION THAT YOU DO NOT WANT TO SHARE PUBLICLY (E.G., IP ADDRESS, USERNAME, ETC.) BEFORE YOU POST ANYTHING!
 
 *You can still send me the info privately via my email. PGP public key available at http://www.cnbeining.com/about/*
 
 Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail.com .
 
-History
-----
+Release History
+---------------
+
 0.98.86: Emergency update: Fake UA to download.
 
 0.98.85: Rewrite url get function, also add IP faking.
