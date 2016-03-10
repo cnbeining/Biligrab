@@ -46,9 +46,9 @@ global vid, cid, partname, title, videourl, part_now, is_first_run, APPKEY, SECR
 
 cookies, VIDEO_FORMAT = '', ''
 LOG_LEVEL, pages, FFPROBE_USABLE = 0, 0, 0
-APPKEY = '85eb6835b0a1034e'
-SECRETKEY = '2ad42749773c441109bdc0191257a664'
-VER = '0.98.86'
+APPKEY = '876fe0ebd0e67a0f'
+SECRETKEY = 'f487b808dc82abb7464a00935d4bb247'
+VER = '0.98.9'
 FAKE_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.52 Safari/537.36'
 FAKE_HEADER = {
     'User-Agent': FAKE_UA,
@@ -113,7 +113,9 @@ def send_request(url, header, is_fake_ip):
     if IS_FAKE_IP == 1:
         header['X-Forwarded-For'] = FAKE_IP
         header['Client-IP'] = FAKE_IP
+        header['X-Real-IP'] = FAKE_IP
     try:
+        #logging.debug(header)
         request = urllib2.Request(url, headers=header)
         response = urllib2.urlopen(request)
         data = response.read()
@@ -154,11 +156,14 @@ def find_cid_api(vid, p, cookies):
     cid = 0
     title , partname , pages, = '', '', ''
     if str(p) is '0' or str(p) is '1':
-        str2Hash = 'appkey={APPKEY}&id={vid}&type=xml{SECRETKEY}'.format(APPKEY = APPKEY, vid = vid, SECRETKEY = SECRETKEY)
-        biliurl = 'https://api.bilibili.com/view?appkey={APPKEY}&id={vid}&type=xml&sign={sign}'.format(APPKEY = APPKEY, vid = vid, SECRETKEY = SECRETKEY, sign = calc_sign(str2Hash))
+        #str2Hash = 'appkey={APPKEY}&id={vid}&type=xml{SECRETKEY}'.format(APPKEY = APPKEY, vid = vid, SECRETKEY = SECRETKEY)
+        #biliurl = 'https://api.bilibili.com/view?appkey={APPKEY}&id={vid}&type=xml&sign={sign}'.format(APPKEY = APPKEY, vid = vid, SECRETKEY = SECRETKEY, sign = calc_sign(str2Hash))
+        biliurl = 'https://api.bilibili.com/view?appkey={APPKEY}&id={vid}&type=xml'.format(APPKEY = APPKEY, vid = vid, SECRETKEY = SECRETKEY)
+
     else:
-        str2Hash = 'appkey={APPKEY}&id={vid}&page={p}&type=xml{SECRETKEY}'.format(APPKEY = APPKEY, vid = vid, p = p, SECRETKEY = SECRETKEY)
-        biliurl = 'https://api.bilibili.com/view?appkey={APPKEY}&id={vid}&page={p}&type=xml&sign={sign}'.format(APPKEY = APPKEY, vid = vid, SECRETKEY = SECRETKEY, p = p, sign = calc_sign(str2Hash))
+        #str2Hash = 'appkey={APPKEY}&id={vid}&page={p}&type=xml{SECRETKEY}'.format(APPKEY = APPKEY, vid = vid, p = p, SECRETKEY = SECRETKEY)
+        #biliurl = 'https://api.bilibili.com/view?appkey={APPKEY}&id={vid}&page={p}&type=xml&sign={sign}'.format(APPKEY = APPKEY, vid = vid, SECRETKEY = SECRETKEY, p = p, sign = calc_sign(str2Hash))
+        biliurl = 'https://api.bilibili.com/view?appkey={APPKEY}&id={vid}&page={p}&type=xml'.format(APPKEY = APPKEY, vid = vid, SECRETKEY = SECRETKEY, p = p)
     logging.debug('BiliURL: ' + biliurl)
     videourl = 'http://www.bilibili.com/video/av{vid}/index_{p}.html'.format(vid = vid, p = p)
     logging.info('Fetching api to read video info...')
@@ -399,9 +404,10 @@ def find_video_address_force_original(cid, header):
     Give the original URL, if possible.
     Method #2."""
         # Force get oriurl
-    sign_this = calc_sign('appkey={APPKEY}&cid={cid}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY))
+    #sign_this = calc_sign('appkey={APPKEY}&cid={cid}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY))
     api_url = 'http://interface.bilibili.com/player?'
-    data = send_request(api_url + 'appkey={APPKEY}&cid={cid}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this), header, IS_FAKE_IP)
+    #data = send_request(api_url + 'appkey={APPKEY}&cid={cid}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this), header, IS_FAKE_IP)
+    data = send_request(api_url + 'appkey={APPKEY}&cid={cid}}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY), header, IS_FAKE_IP)
     #request = urllib2.Request(api_url + 'appkey={APPKEY}&cid={cid}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this), headers=header)
     #response = urllib2.urlopen(request)
     #data = response.read()
@@ -486,11 +492,13 @@ def find_video_address_normal_api(cid, header, method, convert_m3u = False):
     else:  #Method 0 or other
         api_url = 'http://interface.bilibili.com/playurl?'
     if QUALITY == -1:
-        sign_this = calc_sign('appkey={APPKEY}&cid={cid}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY))
-        interface_url = api_url + 'appkey={APPKEY}&cid={cid}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this)
+        #sign_this = calc_sign('appkey={APPKEY}&cid={cid}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY))
+        #interface_url = api_url + 'appkey={APPKEY}&cid={cid}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this)
+        interface_url = api_url + 'appkey={APPKEY}&cid={cid}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY)
     else:
-        sign_this = calc_sign('appkey={APPKEY}&cid={cid}&quality={QUALITY}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, QUALITY = QUALITY))
-        interface_url = api_url + 'appkey={APPKEY}&cid={cid}&quality={QUALITY}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this, QUALITY = QUALITY)
+        #sign_this = calc_sign('appkey={APPKEY}&cid={cid}&quality={QUALITY}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, QUALITY = QUALITY))
+        #interface_url = api_url + 'appkey={APPKEY}&cid={cid}&quality={QUALITY}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this, QUALITY = QUALITY)
+        interface_url = api_url + 'appkey={APPKEY}&cid={cid}&quality={QUALITY}}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, QUALITY = QUALITY)
     logging.info(interface_url)
     data = send_request(interface_url, header, IS_FAKE_IP)
     #request = urllib2.Request(interface_url, headers=header)
@@ -547,7 +555,7 @@ def get_video(oversea, convert_m3u = False):
     elif oversea == '3':
         rawurl = find_video_address_html5(vid, p, BILIGRAB_HEADER)
         if rawurl == []:  #As in #11
-            rawurl = find_video_address_html5(vid, p, BILIGRAB_HEADER)
+            rawurl = find_video_address_html5(vid, p, FAKE_HEADER)
     elif oversea == '4':
         rawurl = find_link_flvcd(videourl)
     elif oversea == '5':
@@ -1335,7 +1343,10 @@ if __name__ == '__main__':
     # deal with danmaku2ass's drama / Twice in case someone failed to check dependencies
     is_export, convert_ass = check_dependencies_danmaku2ass(is_export)
     is_export, convert_ass = check_dependencies_danmaku2ass(is_export)
-    BILIGRAB_UA = 'Biligrab / ' + str(VER) + ' (cnbeining@gmail.com)'
+    python_ver_str = '.'.join([str(i) for i in sys.version_info[:2]])
+    BILIGRAB_UA = 'Biligrab/{VER} (cnbeining@gmail.com) (Python-urllib/{python_ver_str}, like libcurl/1.0 NSS-Mozilla/2.0)'.format(VER = VER, python_ver_str = python_ver_str)
+    
+    #BILIGRAB_UA = 'Biligrab / ' + str(VER) + ' (cnbeining@gmail.com) (like )'
     BILIGRAB_HEADER = {'User-Agent': BILIGRAB_UA, 'Cache-Control': 'no-cache', 'Pragma': 'no-cache', 'Cookie': cookies[0]}
     if LOG_LEVEL == 'DEBUG':
         logging.debug('!!!!!!!!!!!!!!!!!!!!!!!\nWARNING: This log contains some sensitive data. You may want to delete some part of the data before you post it publicly!\n!!!!!!!!!!!!!!!!!!!!!!!')
