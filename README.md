@@ -193,6 +193,8 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 Release History
 ---------------
 
+V0.98.91: Change API key set.
+
 0.98.86: Emergency update: Fake UA to download.
 
 0.98.85: Rewrite url get function, also add IP faking.

@@ -46,9 +46,9 @@ global vid, cid, partname, title, videourl, part_now, is_first_run, APPKEY, SECR
 
 cookies, VIDEO_FORMAT = '', ''
 LOG_LEVEL, pages, FFPROBE_USABLE = 0, 0, 0
-APPKEY = '876fe0ebd0e67a0f'
-SECRETKEY = 'f487b808dc82abb7464a00935d4bb247'
-VER = '0.98.9'
+APPKEY = 'c1b107428d337928'
+SECRETKEY = 'ea85624dfcf12d7cc7b2b3a94fac1f2c'
+VER = '0.98.91'
 FAKE_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.52 Safari/537.36'
 FAKE_HEADER = {
     'User-Agent': FAKE_UA,

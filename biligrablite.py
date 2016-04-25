@@ -24,8 +24,8 @@ global part_now
 
 global appkey
 global secretkey
-appkey='85eb6835b0a1034e';
-secretkey = '2ad42749773c441109bdc0191257a664'
+appkey='c1b107428d337928';
+secretkey = 'ea85624dfcf12d7cc7b2b3a94fac1f2c'
 
 def list_del_repeat(list):
     """delete repeating items in a list, and keep the order.
