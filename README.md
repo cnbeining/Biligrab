@@ -192,8 +192,9 @@ Any donation is welcome as well. Please get in touch with me: cnbeining[at]gmail
 
 Release History
 ---------------
+0.98.92: Again change API key set.
 
-V0.98.91: Change API key set.
+0.98.91: Change API key set.
 
 0.98.86: Emergency update: Fake UA to download.
 

@@ -46,7 +46,7 @@ global vid, cid, partname, title, videourl, part_now, is_first_run, APPKEY, SECR
 
 cookies, VIDEO_FORMAT = '', ''
 LOG_LEVEL, pages, FFPROBE_USABLE = 0, 0, 0
-APPKEY = 'c1b107428d337928'
+APPKEY = 'f3bb208b3d081dc8'
 SECRETKEY = 'ea85624dfcf12d7cc7b2b3a94fac1f2c'
 VER = '0.98.91'
 FAKE_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.52 Safari/537.36'
@@ -158,12 +158,12 @@ def find_cid_api(vid, p, cookies):
     if str(p) is '0' or str(p) is '1':
         #str2Hash = 'appkey={APPKEY}&id={vid}&type=xml{SECRETKEY}'.format(APPKEY = APPKEY, vid = vid, SECRETKEY = SECRETKEY)
         #biliurl = 'https://api.bilibili.com/view?appkey={APPKEY}&id={vid}&type=xml&sign={sign}'.format(APPKEY = APPKEY, vid = vid, SECRETKEY = SECRETKEY, sign = calc_sign(str2Hash))
-        biliurl = 'https://api.bilibili.com/view?appkey={APPKEY}&id={vid}&type=xml'.format(APPKEY = APPKEY, vid = vid, SECRETKEY = SECRETKEY)
+        biliurl = 'https://api.bilibili.com/view?appkey={APPKEY}&id={vid}&type=xml'.format(APPKEY = '8e9fc618fbd41e28', vid = vid, SECRETKEY = SECRETKEY)
 
     else:
         #str2Hash = 'appkey={APPKEY}&id={vid}&page={p}&type=xml{SECRETKEY}'.format(APPKEY = APPKEY, vid = vid, p = p, SECRETKEY = SECRETKEY)
         #biliurl = 'https://api.bilibili.com/view?appkey={APPKEY}&id={vid}&page={p}&type=xml&sign={sign}'.format(APPKEY = APPKEY, vid = vid, SECRETKEY = SECRETKEY, p = p, sign = calc_sign(str2Hash))
-        biliurl = 'https://api.bilibili.com/view?appkey={APPKEY}&id={vid}&page={p}&type=xml'.format(APPKEY = APPKEY, vid = vid, SECRETKEY = SECRETKEY, p = p)
+        biliurl = 'https://api.bilibili.com/view?appkey={APPKEY}&id={vid}&page={p}&type=xml'.format(APPKEY = '8e9fc618fbd41e28', vid = vid, SECRETKEY = SECRETKEY, p = p)
     logging.debug('BiliURL: ' + biliurl)
     videourl = 'http://www.bilibili.com/video/av{vid}/index_{p}.html'.format(vid = vid, p = p)
     logging.info('Fetching api to read video info...')
