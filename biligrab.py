@@ -34,6 +34,7 @@ import logging
 import traceback
 import threading
 import Queue
+from time import time
 
 from xml.dom.minidom import parseString
 
@@ -46,9 +47,10 @@ global vid, cid, partname, title, videourl, part_now, is_first_run, APPKEY, SECR
 
 cookies, VIDEO_FORMAT = '', ''
 LOG_LEVEL, pages, FFPROBE_USABLE = 0, 0, 0
-APPKEY = 'f3bb208b3d081dc8'
-SECRETKEY = 'ea85624dfcf12d7cc7b2b3a94fac1f2c'
-VER = '0.98.91'
+APPKEY = '6f90a59ac58a4123'
+SECRETKEY = 'b78be1fef78c3e7fdc7633e5fd5eee90'
+SECRETKEY_MINILOADER = '1c15888dc316e05a15fdd0a02ed6584f'
+VER = '0.98.95'
 FAKE_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.52 Safari/537.36'
 FAKE_HEADER = {
     'User-Agent': FAKE_UA,
@@ -407,7 +409,7 @@ def find_video_address_force_original(cid, header):
     #sign_this = calc_sign('appkey={APPKEY}&cid={cid}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY))
     api_url = 'http://interface.bilibili.com/player?'
     #data = send_request(api_url + 'appkey={APPKEY}&cid={cid}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this), header, IS_FAKE_IP)
-    data = send_request(api_url + 'appkey={APPKEY}&cid={cid}}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY), header, IS_FAKE_IP)
+    data = send_request(api_url + 'appkey={APPKEY}&cid={cid}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY), header, IS_FAKE_IP)
     #request = urllib2.Request(api_url + 'appkey={APPKEY}&cid={cid}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this), headers=header)
     #response = urllib2.urlopen(request)
     #data = response.read()
@@ -492,13 +494,13 @@ def find_video_address_normal_api(cid, header, method, convert_m3u = False):
     else:  #Method 0 or other
         api_url = 'http://interface.bilibili.com/playurl?'
     if QUALITY == -1:
-        #sign_this = calc_sign('appkey={APPKEY}&cid={cid}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY))
-        #interface_url = api_url + 'appkey={APPKEY}&cid={cid}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this)
-        interface_url = api_url + 'appkey={APPKEY}&cid={cid}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY)
+        sign_this = calc_sign('cid={cid}&from=miniplay&player=1{SECRETKEY_MINILOADER}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY_MINILOADER = SECRETKEY_MINILOADER))
+        interface_url = api_url + 'cid={cid}&from=miniplay&player=1&sign={sign_this}'.format(cid = cid, sign_this = sign_this)
+        #interface_url = api_url + 'appkey={APPKEY}&cid={cid}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY)
     else:
-        #sign_this = calc_sign('appkey={APPKEY}&cid={cid}&quality={QUALITY}{SECRETKEY}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, QUALITY = QUALITY))
-        #interface_url = api_url + 'appkey={APPKEY}&cid={cid}&quality={QUALITY}&sign={sign_this}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, sign_this = sign_this, QUALITY = QUALITY)
-        interface_url = api_url + 'appkey={APPKEY}&cid={cid}&quality={QUALITY}}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY = SECRETKEY, QUALITY = QUALITY)
+        sign_this = calc_sign('cid={cid}&from=miniplay&player=1&quality={QUALITY}{SECRETKEY_MINILOADER}'.format(APPKEY = APPKEY, cid = cid, SECRETKEY_MINILOADER = SECRETKEY_MINILOADER, QUALITY = QUALITY))
+        interface_url = api_url + 'cid={cid}&from=miniplay&player=1&quality={QUALITY}&sign={sign_this}'.format(cid = cid, sign_this = sign_this, QUALITY = QUALITY)
+
     logging.info(interface_url)
     data = send_request(interface_url, header, IS_FAKE_IP)
     #request = urllib2.Request(interface_url, headers=header)
